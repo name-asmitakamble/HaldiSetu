@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "_checks.html" import checks, badge %}
+{% block title %}Negotiation helper{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('mp.lot', lid=lot.listing_id) }}">← Lot #{{ lot.listing_id }}</a></p>
+<h1>Negotiation helper</h1>
+<p class="muted">{{ d.industry_type }}{% if d.is_demo %} <span class="badge warn">TEST BUYER</span>{% endif %} wants {{ '%g'|format(d.quantity) }} {{ d.quantity_unit }} {{ d.product_form }}
+  at {{ d.offered_price|inr }} {{ d.price_unit }}. Your lot #{{ lot.listing_id }}: {{ '%g'|format(lot.quantity) }} {{ lot.quantity_unit }}, asking {{ lot.expected_price|inr }} {{ lot.price_unit }}.</p>
+
+<div class="card">
+  <form method="get" class="form-grid">
+    <div><label for="mp">Your minimum acceptable price (₹ per quintal)</label>
+      <input id="mp" name="min_price" type="number" step="any" min="1" value="{{ res.minimum if res.minimum is not none else '' }}">
+      <div class="hint">Only you see this. The counter-offer will never go below it.</div></div>
+    <div><label for="lg">Message language</label>
+      <select id="lg" name="lang"><option value="en" {{ 'selected' if res.lang == 'en' }}>English</option><option value="mr" {{ 'selected' if res.lang == 'mr' }}>मराठी</option></select></div>
+    <div class="full"><button class="btn small" type="submit">Update suggestion</button></div>
+  </form>
+</div>
+
+<div class="card" style="margin-top:14px">
+  <h2>Suggested counter-offer: <span style="color:var(--green)">{{ res.counter|inr }} / quintal</span></h2>
+  <ul>{% for r in res.reasons %}<li>{{ r }}</li>{% endfor %}</ul>
+  <p class="hint">This is a simple, explained rule (meet in the middle, never below your minimum, never above your ask) — a suggestion, not a market fact.</p>
+  <p>{{ badge(ev) }}</p>{{ checks(ev) }}
+</div>
+
+<div class="card" style="margin-top:14px">
+  <h2>Message draft <span class="small muted">— edit it, then approve and send</span></h2>
+  {% if res.polished_by_llm %}<p class="small muted">Wording polished by AI; all numbers were checked to be unchanged.</p>{% endif %}
+  {% if already %}<div class="notice info">You have already offered this lot to this buyer.</div>
+  {% else %}
+  <form method="post" action="{{ url_for('mp.respond', did=d.demand_id) }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="listing_id" value="{{ lot.listing_id }}">
+    <label for="ask">Asking price sent to the buyer (₹/quintal)</label>
+    <input id="ask" name="ask_price" type="number" step="any" min="1" value="{{ '%.0f'|format(res.counter) }}" style="max-width:220px">
+    <label for="msg" style="margin-top:10px">Message (max 300 characters)</label>
+    <textarea id="msg" name="message" rows="5" maxlength="300">{{ res.message }}</textarea>
+    <p><button class="btn" type="submit">I approve — send to buyer</button>
+      <span class="hint">Nothing is sent until you press this button. This is an offer, not a completed sale.</span></p>
+  </form>{% endif %}
+</div>
+{% endblock %}

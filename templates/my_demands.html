@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}My demands{% endblock %}
+{% block content %}
+<div class="row-actions" style="justify-content:space-between"><h1>My demands</h1><a class="btn" href="{{ url_for('mp.demand_new') }}">+ Post a demand</a></div>
+<div class="table-wrap"><table>
+  <tr><th>#</th><th>Industry</th><th>Need</th><th>Offer</th><th>Status</th><th>Lots offered</th><th></th></tr>
+  {% for d in rows %}<tr><td>{{ d.demand_id }}</td><td>{{ d.industry_type }}{% if d.is_demo %} <span class="badge warn">test</span>{% endif %}</td>
+    <td><a href="{{ url_for('mp.demand_detail', did=d.demand_id) }}">{{ '%g'|format(d.quantity) }} {{ d.quantity_unit }} {{ d.product_form }}</a></td>
+    <td>{{ d.offered_price|inr }} {{ d.price_unit }}</td><td><span class="badge {{ 'ok' if d.status == 'open' else 'grey' }}">{{ d.status }}</span></td>
+    <td>{{ d.responses|length }}</td>
+    <td><form method="post" action="{{ url_for('mp.demand_toggle', did=d.demand_id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <button class="btn secondary small" type="submit">{{ 'Close' if d.status == 'open' else 'Reopen' }}</button></form></td></tr>
+  {% else %}<tr><td colspan="7" class="muted">No demands yet.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

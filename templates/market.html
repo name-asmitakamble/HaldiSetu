@@ -1,0 +1,515 @@
+{% extends "base.html" %}
+{% block title %}Market prices{% endblock %}
+{% block content %}
+<h1>Turmeric market prices</h1>
+
+{# ========= MARKET RECOMMENDATION AGENT ========= #}
+<div class="card" style="margin-bottom:18px;border-color:var(--gold)">
+  <h2 style="margin-bottom:4px">🌾 Which market should I sell at?</h2>
+  <p class="small muted" style="margin-bottom:12px">Enter your details below. The recommendation agent analyses stored official mandi records (Agmarknet / data.gov.in) to suggest the best market for your turmeric — with gross and net value estimates and transparent calculations.</p>
+  <form method="post" action="{{ url_for('ag.market_recommend') }}" class="form-grid">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div>
+      <label for="rec_location">Your location (district / village)</label>
+      <input id="rec_location" name="rec_location" type="text" placeholder="e.g. Sangli, Erode, Nizamabad"
+             value="{{ rec_form.location if rec_form else '' }}" required maxlength="120">
+    </div>
+    <div>
+      <label for="rec_variety">Turmeric variety (optional)</label>
+      <input id="rec_variety" name="rec_variety" type="text" placeholder="e.g. Rajapuri, Salem, Lakadong"
+             value="{{ rec_form.variety if rec_form else '' }}" maxlength="60">
+    </div>
+    <div>
+      <label for="rec_quantity">Quantity to sell</label>
+      <input id="rec_quantity" name="rec_quantity" type="number" step="any" min="0.01"
+             placeholder="e.g. 10" value="{{ rec_form.quantity if rec_form else '' }}" required>
+    </div>
+    <div>
+      <label for="rec_unit">Unit</label>
+      <select id="rec_unit" name="rec_unit">
+        {% for u in ['Quintal','Kg','Tonne'] %}
+        <option {{ 'selected' if rec_form and rec_form.unit == u }}>{{ u }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="rec_transport">Transport cost (₹/quintal, optional)</label>
+      <input id="rec_transport" name="rec_transport" type="number" step="any" min="0"
+             placeholder="e.g. 150" value="{{ rec_form.transport if rec_form else '' }}">
+    </div>
+    <div class="full row-actions">
+      <button class="btn" type="submit">Get recommendation</button>
+      <span class="hint">Uses only stored official mandi records. No invented prices.</span>
+    </div>
+  </form>
+
+  {% if rec_result %}
+  <div style="margin-top:18px">
+    {# Data warnings #}
+    {% if rec_result.data_warning %}
+    <div class="notice warn">{{ rec_result.data_warning }}</div>
+    {% endif %}
+    {% if rec_result.variety_warning %}
+    <div class="notice warn">{{ rec_result.variety_warning }}</div>
+    {% endif %}
+    {% if rec_result.local_scope %}
+    <div class="notice info">{{ rec_result.local_scope }}</div>
+    {% endif %}
+
+    {# Summary #}
+    {% if rec_result.errors %}
+      {% for e in rec_result.errors %}<div class="notice err">{{ e }}</div>{% endfor %}
+    {% elif rec_result.best %}
+    <div class="notice good" style="margin-bottom:12px">
+      <strong>Recommended:</strong> {{ rec_result.best.market_name }}, {{ rec_result.best.state }}
+      — ₹{{ '%.0f'|format(rec_result.best.modal_price) }}/quintal
+      (data: {{ rec_result.best.reporting_date.strftime('%d %b %Y') }}, source: {{ rec_result.best.source_name }})
+      {% if rec_result.best.gross_value %} · Gross ≈ ₹{{ '{:,.0f}'.format(rec_result.best.gross_value) }}{% endif %}
+      {% if rec_result.best.net_value is not none %} · Net ≈ ₹{{ '{:,.0f}'.format(rec_result.best.net_value) }}{% endif %}
+    </div>
+    <p class="small muted" style="margin-bottom:10px">{{ rec_result.summary_text }}</p>
+
+    {# Ranked markets table #}
+    {% if rec_result.ranked_markets|length > 1 %}
+    <h3 style="margin-bottom:6px">All ranked markets ({{ rec_result.ranked_markets|length }})</h3>
+    <div class="table-wrap">
+      <table>
+        <tr>
+          <th>#</th><th>Market</th><th>State</th><th>District</th><th>Variety</th>
+          <th class="num">Modal ₹/q</th><th class="num">Min</th><th class="num">Max</th>
+          <th>Data date</th><th>Trend</th>
+          <th class="num">Gross ({{ rec_form.quantity }}{{ rec_form.unit[0] }})</th>
+          {% if rec_result.ranked_markets[0].net_value is not none %}<th class="num">Net (after transport)</th>{% endif %}
+          <th>Local?</th>
+        </tr>
+        {% for m in rec_result.ranked_markets %}
+        <tr {% if loop.index == 1 %}style="background:var(--gold-soft)"{% endif %}>
+          <td><strong>{{ loop.index }}</strong></td>
+          <td>{{ m.market_name }}</td>
+          <td>{{ m.state }}</td>
+          <td>{{ m.district }}</td>
+          <td>{{ m.variety }}</td>
+          <td class="num"><strong>{{ '₹%.0f'|format(m.modal_price) }}</strong>
+            {% if m.is_stale %}<span class="badge grey" title="Historical data">hist</span>{% endif %}
+            {% if m.is_sample %}<span class="badge warn">sample</span>{% endif %}
+          </td>
+          <td class="num">{% if m.min_price %}{{ '₹%.0f'|format(m.min_price) }}{% else %}—{% endif %}</td>
+          <td class="num">{% if m.max_price %}{{ '₹%.0f'|format(m.max_price) }}{% else %}—{% endif %}</td>
+          <td>{{ m.reporting_date.strftime('%d %b %Y') }}</td>
+          <td>{% if m.trend_direction == 'rising' %}<span class="badge ok">↑ Rising</span>
+              {% elif m.trend_direction == 'falling' %}<span class="badge err">↓ Falling</span>
+              {% elif m.trend_direction == 'stable' %}<span class="badge grey">→ Stable</span>
+              {% else %}<span class="badge grey">—</span>{% endif %}</td>
+          <td class="num">₹{{ '{:,.0f}'.format(m.gross_value) }}</td>
+          {% if rec_result.ranked_markets[0].net_value is not none %}
+          <td class="num">{% if m.net_value is not none %}₹{{ '{:,.0f}'.format(m.net_value) }}{% else %}—{% endif %}</td>
+          {% endif %}
+          <td>{% if m.is_local %}<span class="badge ok">✓ Near you</span>{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    {% endif %}
+
+    {# Per-market explanations (collapsible detail) #}
+    <details style="margin-top:12px">
+      <summary class="small" style="cursor:pointer;color:var(--green-2)">Show detailed explanation for each market</summary>
+      {% for m in rec_result.ranked_markets %}
+      <div class="card" style="margin-top:10px;padding:14px">
+        <strong>#{{ loop.index }} {{ m.market_name }}</strong> ({{ m.state }})
+        <p class="small" style="margin:.4rem 0 0">{{ m.explanation }}</p>
+      </div>
+      {% endfor %}
+    </details>
+
+    <p class="hint" style="margin-top:10px">
+      ⓘ Recommendations use stored Agmarknet / data.gov.in records only. Gross value = modal price × quantity.
+      Net value = (modal price − transport cost) × quantity. These are estimates; verify today's rate at your mandi.
+      Trend = least-squares regression on daily averages over the last 30 days of data (shown only when ≥ 5 dates available).
+    </p>
+    {% else %}
+    <div class="notice warn">No market data available to generate a recommendation. Ask your admin to import price data.</div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{# ========= END RECOMMENDATION AGENT ========= #}
+
+{% if msum %}
+<div class="card" style="margin-bottom:12px"><div class="row-actions" style="justify-content:space-between">
+  <strong>Daily market summary</strong>
+  <span class="small">{% for code, name in [('en','English'),('mr','मराठी'),('hi','हिन्दी')] %}
+    <a href="{{ url_for('market', lang=code) }}" {{ 'style=font-weight:700' if lang == code }}>{{ name }}</a>{{ ' · ' if not loop.last }}{% endfor %}</span></div>
+  <p style="margin:.4rem 0 0">{{ msum.text }}</p>
+  <p class="hint">Written by the market agent from the stored records only; the source and date are always shown.</p></div>
+{% endif %}
+{% if last_sync %}<p class="small muted">Last data.gov.in sync: {{ last_sync.created_at.strftime('%d %b %Y %H:%M') }} UTC — {{ last_sync.detail }}</p>{% endif %}
+{% if is_partial_sync %}
+<div class="notice warn">
+  <strong>Partial data synchronization.</strong> Some pages or districts could not be fetched during the last sync. Available records are shown below.
+</div>
+{% endif %}
+{% if only_sample %}
+<div class="notice err"><strong>No real mandi data loaded.</strong>
+  The database previously contained only SAMPLE (invented demo) prices which have been cleared.
+  To see real Agmarknet prices: configure <code>DATA_GOV_API_KEY</code> in your <code>.env</code> file
+  (free key from <a href="https://data.gov.in" target="_blank" rel="noopener">data.gov.in</a>)
+  and ask your admin to click <strong>Sync now</strong> on the Admin dashboard,
+  or import a CSV downloaded from
+  <a href="https://data.gov.in/catalog/current-daily-price-various-commodities-various-markets-mandi" target="_blank" rel="noopener">data.gov.in</a>.
+</div>
+{% elif is_sample %}
+<div class="notice err"><strong>SAMPLE DATA.</strong> Some rows below are invented demo values, not real mandi prices.
+  Import real records (Admin → Import prices) before the final demo.</div>
+{% elif latest is none %}
+  <div class="notice warn"><strong>No real price records loaded yet.</strong>
+    Configure <code>DATA_GOV_API_KEY</code> in <code>.env</code> and click Sync now (Admin dashboard),
+    or import a CSV from <a href="https://data.gov.in/catalog/current-daily-price-various-commodities-various-markets-mandi" target="_blank" rel="noopener">data.gov.in</a>.
+  </div>
+{% elif age > stale_days %}
+  <div class="notice warn"><strong>Historical data.</strong> The newest real record is dated {{ latest|dmy }} ({{ age }} days old).
+    These are past prices, <strong>not current market prices</strong>.</div>
+{% else %}
+  <div class="notice info">Newest real Agmarknet record: <strong>{{ latest|dmy }}</strong>. Prices are as reported by the
+    listed source on the date shown; verify today's rate at the mandi.</div>
+{% endif %}
+
+
+<div class="card" style="margin-top:16px">
+  <h2>Industry procurement prices</h2>
+  <p class="small muted">
+    Verified commercial benchmarks, wholesale references, and published trade sources across turmeric industry sectors —
+    <strong>not official market prices</strong> (official Agmarknet mandi prices are shown below).
+    Demo/test buyer quotes are excluded.
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Industry</th>
+          <th>Price / reference</th>
+          <th>Price type</th>
+          <th>Product form / grade</th>
+          <th>Source</th>
+          <th>Reported date</th>
+          <th>Data status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in industry %}
+        <tr>
+          <td><strong>{{ r.industry }}</strong></td>
+          {% if r.price_display %}
+          <td>
+            <strong>{{ r.price_display }}</strong>
+            {% if r.notes %}
+            <div class="small muted" style="margin-top:2px">{{ r.notes }}</div>
+            {% endif %}
+          </td>
+          <td><span class="badge grey">{{ r.price_type }}</span></td>
+          <td>{{ r.product_form or '—' }}</td>
+          <td>
+            {% if r.source_url %}
+            <a href="{{ r.source_url }}" target="_blank" rel="noopener">{{ r.source_name }} ↗</a>
+            {% else %}
+            {{ r.source_name or '—' }}
+            {% endif %}
+          </td>
+          <td>{{ r.reported_date or '—' }}</td>
+          <td>
+            {% if 'Verified' in r.status %}
+            <span class="badge ok">{{ r.status }}</span>
+            {% else %}
+            <span class="badge grey">{{ r.status }}</span>
+            {% endif %}
+          </td>
+          {% else %}
+          <td colspan="5" class="muted" style="font-style:italic">
+            {{ r.unavailable_message or 'No verified industry procurement price is currently available for this category.' }}
+            {% if r.notes %}
+            <div class="small muted" style="margin-top:2px">{{ r.notes }}</div>
+            {% endif %}
+          </td>
+          <td><span class="badge grey">{{ r.status }}</span></td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="hint" style="margin-top:8px">
+    ⓘ <strong>Sector Benchmarks vs Mandi Rates:</strong> Mandi prices reflect raw farm-gate auctions (Agmarknet). Extraction-grade benchmarks (e.g. Mane Kancor) reflect high-curcumin industrial finger procurement. Processed ingredient listings (e.g. YesBatch 95% curcumin extract) reflect purified commercial extracts and cannot be directly compared with raw agricultural mandi rates.
+  </p>
+</div>
+
+<form method="get" class="card form-grid" style="margin-top:16px" id="market_filter_form">
+  <div>
+    <label for="f_state">State</label>
+    <select id="f_state" name="state">
+      <option value="">All States</option>
+      {% for o in opts['state'] %}<option value="{{ o }}" {{ 'selected' if f.get('state') == o }}>{{ o }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="f_district">District</label>
+    <select id="f_district" name="district">
+      <option value="">All Districts</option>
+      {% for o in opts['district'] %}<option value="{{ o }}" {{ 'selected' if f.get('district') == o }}>{{ o }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="f_market">Market (Mandi)</label>
+    <select id="f_market" name="market">
+      <option value="">All Markets</option>
+      {% for o in opts['market'] %}<option value="{{ o }}" {{ 'selected' if f.get('market') == o }}>{{ o }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="f_variety">Variety</label>
+    <select id="f_variety" name="variety">
+      <option value="">All Varieties</option>
+      {% for o in opts['variety'] %}<option value="{{ o }}" {{ 'selected' if f.get('variety') == o }}>{{ o }}</option>{% endfor %}
+    </select>
+  </div>
+  <div><label for="from">From date</label><input id="from" type="date" name="from" value="{{ f.get('from','') }}"></div>
+  <div><label for="to">To date</label><input id="to" type="date" name="to" value="{{ f.get('to','') }}"></div>
+  <div>
+    <label for="sort_by">Sort by</label>
+    <select id="sort_by" name="sort">
+      <option value="date" {{ 'selected' if sort and sort.by == 'date' }}>Reported Date</option>
+      <option value="price" {{ 'selected' if sort and sort.by == 'price' }}>Modal Price</option>
+      <option value="market" {{ 'selected' if sort and sort.by == 'market' }}>Market Name</option>
+      <option value="district" {{ 'selected' if sort and sort.by == 'district' }}>District</option>
+      <option value="state" {{ 'selected' if sort and sort.by == 'state' }}>State</option>
+    </select>
+  </div>
+  <div>
+    <label for="sort_dir">Order</label>
+    <select id="sort_dir" name="dir">
+      <option value="desc" {{ 'selected' if sort and sort.dir == 'desc' }}>Highest / Newest first</option>
+      <option value="asc" {{ 'selected' if sort and sort.dir == 'asc' }}>Lowest / Oldest first</option>
+    </select>
+  </div>
+  <div class="full row-actions">
+    <button class="btn" type="submit">Apply filters</button>
+    <a class="btn secondary" href="{{ url_for('market') }}">Reset all filters</a>
+    {% if f.get('district') %}
+    <a class="btn secondary" href="{{ url_for('market', state=f.get('state',''), from=f.get('from',''), to=f.get('to',''), sort=(sort.by if sort else 'date'), dir=(sort.dir if sort else 'desc')) }}">
+      View all districts in {{ f.get('state') or 'India' }}
+    </a>
+    {% endif %}
+  </div>
+</form>
+
+{% if user and user.role in ('farmer','buyer') %}
+<div class="card" style="margin-top:16px"><h2>Price alerts</h2>
+  <form method="post" action="{{ url_for('ag.alert_create') }}" class="form-grid">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div><label for="al_m">Market (blank = highest market of the day)</label>
+      <select id="al_m" name="market_name"><option value="">Highest market</option>{% for o in opts['market'] %}<option>{{ o }}</option>{% endfor %}</select></div>
+    <div><label for="al_d">Tell me when the modal price goes</label>
+      <select id="al_d" name="direction"><option value="above">above</option><option value="below">below</option></select></div>
+    <div><label for="al_t">₹ per quintal</label><input id="al_t" name="threshold_q" type="number" step="any" min="1" required></div>
+    <div class="full"><button class="btn small" type="submit">Save alert</button>
+      <span class="hint">Alerts appear on your dashboard when new price data arrives (no SMS).</span></div>
+  </form>
+  {% if my_alerts %}<div class="table-wrap" style="margin-top:10px"><table><tr><th>Market</th><th>Condition</th><th></th></tr>
+    {% for al in my_alerts %}<tr><td>{{ al.market_name or 'Highest market' }}</td><td>{{ al.direction }} ₹{{ '%.0f'|format(al.threshold_q) }}/q</td>
+      <td><form method="post" action="{{ url_for('ag.alert_delete', aid=al.alert_id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="btn secondary small" type="submit">Remove</button></form></td></tr>{% endfor %}</table></div>{% endif %}
+</div>
+{% endif %}
+
+{% if chart.datasets %}
+<div class="card" style="margin-top:16px">
+  <h2>Modal price trend</h2>
+  <div class="chart-box"><canvas id="priceChart" aria-label="Modal price trend chart" role="img"></canvas></div>
+  <p class="hint">Rs per quintal. Up to 5 markets with the most records in the current selection.</p>
+</div>
+{% endif %}
+
+<div class="row-actions" style="margin-top:22px;justify-content:space-between;align-items:baseline">
+  <h2>Records ({{ counts.match_total if counts else rows|length }})</h2>
+  <div class="small muted">
+    {% if counts %}
+    Matching: <strong>{{ counts.match_states }}</strong> state(s), <strong>{{ counts.match_districts }}</strong> district(s), <strong>{{ counts.match_markets }}</strong> market(s)
+    · Database total: <strong>{{ counts.db_total_records }}</strong> records across <strong>{{ counts.db_total_districts }}</strong> districts
+    {% endif %}
+  </div>
+</div>
+
+<div class="table-wrap"><table>
+  <tr>
+    <th>
+      <a href="{{ url_for('market', state=f.get('state',''), district=f.get('district',''), market=f.get('market',''), variety=f.get('variety',''), from=f.get('from',''), to=f.get('to',''), sort='date', dir='asc' if sort and sort.by == 'date' and sort.dir == 'desc' else 'desc') }}">
+        Date {{ '▼' if sort and sort.by == 'date' and sort.dir == 'desc' else ('▲' if sort and sort.by == 'date' else '') }}
+      </a>
+    </th>
+    <th>
+      <a href="{{ url_for('market', state=f.get('state',''), district=f.get('district',''), market=f.get('market',''), variety=f.get('variety',''), from=f.get('from',''), to=f.get('to',''), sort='state', dir='desc' if sort and sort.by == 'state' and sort.dir == 'asc' else 'asc') }}">
+        State {{ '▲' if sort and sort.by == 'state' and sort.dir == 'asc' else ('▼' if sort and sort.by == 'state' else '') }}
+      </a>
+    </th>
+    <th>
+      <a href="{{ url_for('market', state=f.get('state',''), district=f.get('district',''), market=f.get('market',''), variety=f.get('variety',''), from=f.get('from',''), to=f.get('to',''), sort='district', dir='desc' if sort and sort.by == 'district' and sort.dir == 'asc' else 'asc') }}">
+        District {{ '▲' if sort and sort.by == 'district' and sort.dir == 'asc' else ('▼' if sort and sort.by == 'district' else '') }}
+      </a>
+    </th>
+    <th>
+      <a href="{{ url_for('market', state=f.get('state',''), district=f.get('district',''), market=f.get('market',''), variety=f.get('variety',''), from=f.get('from',''), to=f.get('to',''), sort='market', dir='desc' if sort and sort.by == 'market' and sort.dir == 'asc' else 'asc') }}">
+        Market {{ '▲' if sort and sort.by == 'market' and sort.dir == 'asc' else ('▼' if sort and sort.by == 'market' else '') }}
+      </a>
+    </th>
+    <th>Variety</th>
+    <th class="num">Min</th>
+    <th class="num">Max</th>
+    <th class="num">
+      <a href="{{ url_for('market', state=f.get('state',''), district=f.get('district',''), market=f.get('market',''), variety=f.get('variety',''), from=f.get('from',''), to=f.get('to',''), sort='price', dir='asc' if sort and sort.by == 'price' and sort.dir == 'desc' else 'desc') }}">
+        Modal {{ '▼' if sort and sort.by == 'price' and sort.dir == 'desc' else ('▲' if sort and sort.by == 'price' else '') }}
+      </a>
+    </th>
+    <th>Unit</th>
+    <th>Age</th>
+    <th>Source</th>
+  </tr>
+  {% for r in rows %}
+  {% set days = (today - r.reporting_date).days if r.reporting_date else none %}
+  <tr>
+    <td>{{ r.reporting_date|dmy }}</td>
+    <td>{{ r.state or '—' }}</td>
+    <td>{{ r.district or '—' }}</td>
+    <td><strong>{{ r.market_name }}</strong></td>
+    <td>{{ r.variety or '—' }}</td>
+    <td class="num">{{ r.minimum_price|inr }}</td>
+    <td class="num">{{ r.maximum_price|inr }}</td>
+    <td class="num"><strong>{{ r.modal_price|inr }}</strong>{% if flags.get(r.price_id) %} <span class="badge err" title="{{ flags[r.price_id]|join('; ') }}">⚠ check</span>{% endif %}</td>
+    <td>{{ r.unit }}</td>
+    <td>{% if days is none %}—{% elif days > stale_days %}<span class="badge grey">Historical · {{ days }}d</span>{% else %}<span class="badge ok">Recent · {{ days }}d</span>{% endif %}</td>
+    <td class="small" style="white-space:normal;min-width:180px">{{ r.source_name or '—' }}</td>
+  </tr>
+  {% else %}
+  <tr>
+    <td colspan="11" class="muted" style="padding:18px">
+      {% if f.get('district') %}
+        No turmeric records found for district <strong>"{{ f.get('district') }}"</strong> in the official dataset.
+        Not all agricultural districts cultivate or report turmeric to AGMARKNET.
+        <br><br>
+        <a class="btn secondary small" href="{{ url_for('market', state=f.get('state','')) }}">View all districts in {{ f.get('state') or 'India' }}</a>
+      {% else %}
+        No records match these filters. <a href="{{ url_for('market') }}">Reset filters</a> to view all districts.
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table></div>
+
+{% if pagination and pagination.total_pages > 1 %}
+<div class="row-actions" style="margin-top:14px;justify-content:space-between;flex-wrap:wrap">
+  <div class="small muted">
+    Page <strong>{{ pagination.page }}</strong> of <strong>{{ pagination.total_pages }}</strong> ({{ pagination.total }} records)
+  </div>
+  <div class="row-actions">
+    {% if pagination.has_prev %}
+    <a class="btn secondary small" href="{{ url_for('market', state=f.get('state',''), district=f.get('district',''), market=f.get('market',''), variety=f.get('variety',''), from=f.get('from',''), to=f.get('to',''), sort=(sort.by if sort else 'date'), dir=(sort.dir if sort else 'desc'), per_page=pagination.per_page, page=pagination.prev_page) }}">« Prev</a>
+    {% endif %}
+    {% if pagination.has_next %}
+    <a class="btn secondary small" href="{{ url_for('market', state=f.get('state',''), district=f.get('district',''), market=f.get('market',''), variety=f.get('variety',''), from=f.get('from',''), to=f.get('to',''), sort=(sort.by if sort else 'date'), dir=(sort.dir if sort else 'desc'), per_page=pagination.per_page, page=pagination.next_page) }}">Next »</a>
+    {% endif %}
+    <span class="small muted" style="margin-left:10px">Per page:
+      <a href="{{ url_for('market', state=f.get('state',''), district=f.get('district',''), market=f.get('market',''), variety=f.get('variety',''), from=f.get('from',''), to=f.get('to',''), sort=(sort.by if sort else 'date'), dir=(sort.dir if sort else 'desc'), per_page='25') }}" {{ 'style=font-weight:700' if pagination.per_page == '25' }}>25</a> ·
+      <a href="{{ url_for('market', state=f.get('state',''), district=f.get('district',''), market=f.get('market',''), variety=f.get('variety',''), from=f.get('from',''), to=f.get('to',''), sort=(sort.by if sort else 'date'), dir=(sort.dir if sort else 'desc'), per_page='50') }}" {{ 'style=font-weight:700' if pagination.per_page == '50' or not pagination.per_page }}>50</a> ·
+      <a href="{{ url_for('market', state=f.get('state',''), district=f.get('district',''), market=f.get('market',''), variety=f.get('variety',''), from=f.get('from',''), to=f.get('to',''), sort=(sort.by if sort else 'date'), dir=(sort.dir if sort else 'desc'), per_page='100') }}" {{ 'style=font-weight:700' if pagination.per_page == '100' }}>100</a> ·
+      <a href="{{ url_for('market', state=f.get('state',''), district=f.get('district',''), market=f.get('market',''), variety=f.get('variety',''), from=f.get('from',''), to=f.get('to',''), sort=(sort.by if sort else 'date'), dir=(sort.dir if sort else 'desc'), per_page='all') }}" {{ 'style=font-weight:700' if pagination.per_page == 'all' }}>View All</a>
+    </span>
+  </div>
+</div>
+{% endif %}
+{% if flags %}<div class="notice warn small">⚠ <strong>{{ flags|length }} record(s) flagged by the market agent</strong> (hover the badge for the reason). Flagged records are kept, not corrected — verify them at the mandi.</div>{% endif %}
+<p class="hint">Modal price = the most commonly traded price on that day. Prices vary by quality and market.</p>
+{% endblock %}
+{% block scripts %}
+{% if chart.datasets %}
+<script src="{{ url_for('static', filename='js/chart.umd.js') }}"></script>
+<script>
+(function () {
+  if (typeof Chart === 'undefined') return;
+  var d = {{ chart|tojson }}, colors = ['#1b4d3e', '#e0a100', '#b3261e', '#2b6cb0', '#7b4fa3'];
+  d.datasets.forEach(function (s, i) { s.borderColor = colors[i % 5]; s.backgroundColor = colors[i % 5];
+    s.tension = .25; s.spanGaps = true; s.pointRadius = 2; });
+  new Chart(document.getElementById('priceChart'), { type: 'line', data: d,
+    options: { responsive: true, maintainAspectRatio: false,
+      scales: { y: { title: { display: true, text: 'Rs / quintal' } } } } });
+})();
+</script>
+{% endif %}
+
+<script>
+(function () {
+  var hierarchy = {{ hierarchy|default({})|tojson }};
+  var stateSel = document.getElementById('f_state');
+  var distSel = document.getElementById('f_district');
+  var mktSel = document.getElementById('f_market');
+  if (!stateSel || !distSel || !mktSel || !hierarchy || Object.keys(hierarchy).length === 0) return;
+
+  function updateDistricts(keepVal) {
+    var st = stateSel.value;
+    var curDist = keepVal ? distSel.value : '';
+    distSel.innerHTML = '<option value="">All Districts</option>';
+    var dists = [];
+    if (st && hierarchy[st]) {
+      dists = Object.keys(hierarchy[st]).sort();
+    } else {
+      var set = {};
+      Object.keys(hierarchy).forEach(function(s) {
+        Object.keys(hierarchy[s]).forEach(function(d) { set[d] = true; });
+      });
+      dists = Object.keys(set).sort();
+    }
+    dists.forEach(function(d) {
+      var opt = document.createElement('option');
+      opt.value = d;
+      opt.textContent = d;
+      if (d === curDist) opt.selected = true;
+      distSel.appendChild(opt);
+    });
+    updateMarkets(keepVal);
+  }
+
+  function updateMarkets(keepVal) {
+    var st = stateSel.value;
+    var dt = distSel.value;
+    var curMkt = keepVal ? mktSel.value : '';
+    mktSel.innerHTML = '<option value="">All Markets</option>';
+    var mkts = [];
+    if (st && dt && hierarchy[st] && hierarchy[st][dt]) {
+      mkts = hierarchy[st][dt].slice().sort();
+    } else if (st && hierarchy[st]) {
+      var set = {};
+      Object.keys(hierarchy[st]).forEach(function(d) {
+        hierarchy[st][d].forEach(function(m) { set[m] = true; });
+      });
+      mkts = Object.keys(set).sort();
+    } else {
+      var setAll = {};
+      Object.keys(hierarchy).forEach(function(s) {
+        Object.keys(hierarchy[s]).forEach(function(d) {
+          hierarchy[s][d].forEach(function(m) { setAll[m] = true; });
+        });
+      });
+      mkts = Object.keys(setAll).sort();
+    }
+    mkts.forEach(function(m) {
+      var opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = m;
+      if (m === curMkt) opt.selected = true;
+      mktSel.appendChild(opt);
+    });
+  }
+
+  stateSel.addEventListener('change', function () { updateDistricts(false); });
+  distSel.addEventListener('change', function () { updateMarkets(false); });
+})();
+</script>
+{% endblock %}

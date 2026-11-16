@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Post a demand{% endblock %}
+{% block content %}
+<h1>Post a buyer demand</h1>
+<p class="muted">Say exactly what you need. Farmers' lots are matched against these requirements.</p>
+<form method="post" class="card form-grid">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div><label for="industry_type">Your industry</label><select id="industry_type" name="industry_type" required>
+    {% for i in industries %}<option {{ 'selected' if form.get('industry_type') == i }}>{{ i }}</option>{% endfor %}</select></div>
+  <div><label for="product_form">Product form</label><select id="product_form" name="product_form">
+    {% for p in forms %}<option {{ 'selected' if form.get('product_form') == p }}>{{ p }}</option>{% endfor %}</select></div>
+  <div><label for="quantity">Quantity needed</label><input id="quantity" name="quantity" type="number" step="any" min="0.01" required value="{{ form.get('quantity','') }}"></div>
+  <div><label for="quantity_unit">Unit</label><select id="quantity_unit" name="quantity_unit">{% for u in qty_units %}<option {{ 'selected' if form.get('quantity_unit') == u }}>{{ u }}</option>{% endfor %}</select></div>
+  <div><label for="offered_price">Price you offer (₹)</label><input id="offered_price" name="offered_price" type="number" step="any" min="0.01" required value="{{ form.get('offered_price','') }}"></div>
+  <div><label for="price_unit">Price unit</label><select id="price_unit" name="price_unit">{% for u in price_units %}<option {{ 'selected' if form.get('price_unit') == u }}>{{ u }}</option>{% endfor %}</select></div>
+  <div><label for="min_curcumin">Minimum curcumin % (optional)</label><input id="min_curcumin" name="min_curcumin" type="number" step="0.01" min="0" max="100" value="{{ form.get('min_curcumin','') }}"></div>
+  <div><label for="max_moisture">Maximum moisture % (optional)</label><input id="max_moisture" name="max_moisture" type="number" step="0.1" min="0" max="100" value="{{ form.get('max_moisture','') }}"></div>
+  <div><label for="delivery_location">Delivery location</label><input id="delivery_location" name="delivery_location" required maxlength="120" value="{{ form.get('delivery_location','') }}"></div>
+  <div><label for="deliver_by">Deliver by (optional)</label><input id="deliver_by" name="deliver_by" type="date" value="{{ form.get('deliver_by','') }}"></div>
+  <div class="full"><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" name="requires_lab_report" style="width:auto" {{ 'checked' if form.get('requires_lab_report') }}> Lab report required</label></div>
+  <div class="full"><label for="notes">Notes (optional)</label><input id="notes" name="notes" maxlength="300" value="{{ form.get('notes','') }}"></div>
+  <div class="full hint">Check the exact quality limits your industry needs with the Spices Board or your quality team — HaldiSetu does not set them.</div>
+  <div class="full"><button class="btn" type="submit">Post demand</button> <a class="btn secondary" href="{{ url_for('mp.demands') }}">Cancel</a></div>
+</form>
+{% endblock %}

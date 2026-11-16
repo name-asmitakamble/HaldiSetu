@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Verification{% endblock %}
+{% block content %}
+<h1>Account verification</h1>
+<div class="notice {{ 'good' if status == 'approved' else 'warn' }}">
+  Status: <strong>{{ status }}</strong>.
+  {% if status != 'approved' %}Upload proof so the admin can approve your account. Until then you can use schemes, prices and the disease check, but cannot post lots/demands or make deals.{% endif %}</div>
+<form method="post" enctype="multipart/form-data" class="card form-grid" style="margin-top:14px">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div><label for="doc_type">Document</label><select id="doc_type" name="doc_type">{% for t in types %}<option>{{ t }}</option>{% endfor %}</select></div>
+  <div><label for="proof">File (JPG, PNG or PDF, up to 5 MB)</label><input id="proof" name="proof" type="file" accept=".jpg,.jpeg,.png,.pdf" required></div>
+  <div class="full hint">Your document is stored privately and only the admin can open it. The admin checks it against the official source — HaldiSetu does not claim automatic government verification.</div>
+  <div class="full"><button class="btn" type="submit">Upload proof</button></div>
+</form>
+<h2 style="margin-top:20px">Your uploads</h2>
+<div class="table-wrap"><table><tr><th>Date</th><th>Document</th><th>Status</th><th>Admin note</th></tr>
+  {% for p in proofs %}<tr><td>{{ p.created_at|dmy }}</td><td>{{ p.doc_type }}</td>
+    <td><span class="badge {{ 'ok' if p.status == 'approved' else ('err' if p.status == 'rejected' else 'warn') }}">{{ p.status }}</span></td><td>{{ p.admin_note or '—' }}</td></tr>
+  {% else %}<tr><td colspan="4" class="muted">Nothing uploaded yet.</td></tr>{% endfor %}</table></div>
+{% endblock %}

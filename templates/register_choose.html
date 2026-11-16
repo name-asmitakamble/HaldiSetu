@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<div class="card" style="max-width:520px;margin:0 auto">
+  <h1>Create an account</h1>
+  <div class="grid cols-2">
+    <a class="card module" href="{{ url_for('register', role='farmer') }}">
+      <h3>🌾 I am a Farmer</h3><p class="muted">I have turmeric to sell.</p></a>
+    <a class="card module" href="{{ url_for('register', role='buyer') }}">
+      <h3>🏭 I am a Buyer</h3><p class="muted">I need turmeric for my business.</p></a>
+  </div>
+  <p class="small muted">Already registered? <a href="{{ url_for('login') }}">Log in</a></p>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ role_label }} registration{% endblock %}
+{% block content %}
+<div class="card" style="max-width:520px;margin:0 auto">
+  <h1>{{ role_label }} registration</h1>
+  <form method="post" action="" class="form-grid" novalidate>
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div class="full"><label for="name">Full name</label>
+      <input id="name" name="name" value="{{ form.get('name','') }}" required maxlength="100"></div>
+    <div><label for="phone">Mobile number</label>
+      <input id="phone" name="phone" inputmode="numeric" value="{{ form.get('phone','') }}" required maxlength="10" placeholder="10 digits"></div>
+    <div><label for="district">District (optional)</label>
+      <input id="district" name="district" value="{{ form.get('district','') }}" maxlength="80"></div>
+    <div><label for="password">Password</label>
+      <input id="password" name="password" type="password" minlength="8" required>
+      <div class="hint">At least 8 characters.</div></div>
+    <div class="full"><button class="btn" type="submit">Register</button>
+      <span class="small muted"> Already registered? <a href="{{ url_for('login', role=role) }}">Log in</a></span></div>
+  </form>
+</div>
+{% endblock %}

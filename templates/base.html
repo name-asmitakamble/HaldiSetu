@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="{{ active_lang or 'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}HaldiSetu{% endblock %} · HaldiSetu</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="{{ url_for('index') }}">Haldi<span>Setu</span></a>
+    <nav aria-label="Main">
+      <a href="{{ url_for('detect') }}" class="{{ 'active' if request.endpoint == 'detect' }}">
+        {% if active_lang == 'mr' %}रोग तपासणी{% elif active_lang == 'hi' %}रोग जांच{% else %}Disease check{% endif %}
+      </a>
+      <a href="{{ url_for('sch.schemes') }}" class="{{ 'active' if request.endpoint == 'sch.schemes' }}">
+        {% if active_lang == 'mr' %}शासकीय योजना{% elif active_lang == 'hi' %}सरकारी योजनाएं{% else %}Schemes{% endif %}
+      </a>
+      <a href="{{ url_for('mp.hub') }}" class="{{ 'active' if request.endpoint and (request.endpoint.startswith('mp.') or request.endpoint.startswith('listing') or request.endpoint.startswith('deals.')) }}">
+        {% if active_lang == 'mr' %}बाजारपेठ{% elif active_lang == 'hi' %}मार्केटप्लेस{% else %}Marketplace{% endif %}
+      </a>
+      <a href="{{ url_for('market') }}" class="{{ 'active' if request.endpoint == 'market' }}">
+        {% if active_lang == 'mr' %}बाजार भाव{% elif active_lang == 'hi' %}मंडी भाव{% else %}Market prices{% endif %}
+      </a>
+      {% if user %}
+        {% if user.role in ('farmer', 'buyer') %}<a href="{{ url_for('mp.matches') }}" class="{{ 'active' if request.endpoint == 'mp.matches' }}">AI Matches</a>
+        <a href="{{ url_for('deals.connections') }}" class="{{ 'active' if request.endpoint == 'deals.connections' }}">Connections</a>{% endif %}
+        <a href="{{ url_for('dash.dashboard') }}" class="{{ 'active' if request.endpoint == 'dash.dashboard' }}">
+          {% if active_lang == 'mr' %}डॅशबोर्ड{% elif active_lang == 'hi' %}डैशबोर्ड{% else %}Dashboard{% endif %}
+        </a>
+        <form method="post" action="{{ url_for('logout') }}" style="display:inline">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <button class="linklike" type="submit">
+            {% if active_lang == 'mr' %}लॉगआउट ({{ user.name.split()[0] }}){% elif active_lang == 'hi' %}लॉगआउट ({{ user.name.split()[0] }}){% else %}Logout ({{ user.name.split()[0] }}){% endif %}
+          </button>
+        </form>
+      {% else %}
+        <a href="{{ url_for('login', role='farmer') }}">{% if active_lang == 'mr' %}शेतकरी लॉगिन{% elif active_lang == 'hi' %}किसान लॉगिन{% else %}Farmer login{% endif %}</a>
+        <a href="{{ url_for('login', role='buyer') }}">{% if active_lang == 'mr' %}खरेदीदार लॉगिन{% elif active_lang == 'hi' %}खरीदार लॉगिन{% else %}Buyer login{% endif %}</a>
+        <a href="{{ url_for('login', role='admin') }}">{% if active_lang == 'mr' %}प्रशासक लॉगिन{% elif active_lang == 'hi' %}एडमिन लॉगिन{% else %}Admin login{% endif %}</a>
+        <a href="{{ url_for('register') }}">{% if active_lang == 'mr' %}नोंदणी{% elif active_lang == 'hi' %}पंजीकरण{% else %}Register{% endif %}</a>
+      {% endif %}
+
+      <span class="lang-nav" style="display:inline-flex;gap:4px;margin-left:8px;vertical-align:middle" title="Select Website Language">
+        <a href="{{ url_for('set_language', lang='en', next=request.path) }}" class="badge {{ 'ok' if (active_lang or 'en') == 'en' else 'grey' }}" style="font-size:.7rem;padding:2px 7px">EN</a>
+        <a href="{{ url_for('set_language', lang='mr', next=request.path) }}" class="badge {{ 'ok' if active_lang == 'mr' else 'grey' }}" style="font-size:.7rem;padding:2px 7px">मराठी</a>
+        <a href="{{ url_for('set_language', lang='hi', next=request.path) }}" class="badge {{ 'ok' if active_lang == 'hi' else 'grey' }}" style="font-size:.7rem;padding:2px 7px">हिंदी</a>
+      </span>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, m in msgs %}<div class="flash {{ cat }}" role="alert">{{ m }}</div>{% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+<footer>
+  <div class="wrap">
+    {% if active_lang == 'mr' %}
+    हळदीसेतू शेतकऱ्यांच्या निर्णय प्रक्रियेस मदत करते. हे कृषी तज्ज्ञ, शासकीय अधिकारी किंवा प्रत्यक्ष खरेदीदार-विक्रेता कराराची जागा घेत नाही.
+    {% elif active_lang == 'hi' %}
+    हल्दीसेतु किसानों की निर्णय प्रक्रिया में सहायता करता है। यह कृषि विशेषज्ञों, सरकारी अधिकारियों या वास्तविक क्रेता-विक्रेता समझौतों का विकल्प नहीं है।
+    {% else %}
+    HaldiSetu supports farmer decision-making. It does not replace agricultural experts, government authorities,
+    official market platforms or actual buyer–seller agreements.
+    {% endif %}
+  </div>
+</footer>
+{% block scripts %}{% endblock %}
+
+<script>
+(function() {
+  var lang = "{{ active_lang or 'en' }}";
+  if (!lang || lang === 'en') return;
+
+  var DICTS = {
+    mr: {"Best direct offer for your lots right now": "तुमच्या हळदीसाठी सध्याची सर्वोत्तम थेट ऑफर", "offered prices on HaldiSetu, not official market prices": "हळदीसेतूवरील दर, अधिकृत बाजार समितीचे भाव नाहीत", "Uses only stored official mandi records. No invented prices.": "केवळ अधिकृत शासकीय बाजार नोंदी वापरल्या जातात. बनावट भाव नाहीत.", "Get optimal mandi recommendations based on your location, turmeric variety, and quantity.": "आपले ठिकाण, जात आणि प्रमाणानुसार सर्वोत्तम बाजार समितीची शिफारस मिळवा.", "Compares local mandi with 4 industrial buyers for your lot": "स्थानिक बाजार समिती आणि ४ औद्योगिक खरेदीदारांचे दर तपासून सर्वोत्तम मार्ग दाखवतो", "No verified industry procurement price is currently available for this category.": "या उद्योगासाठी सध्या कोणताही सत्यापित खरेदी भाव उपलब्ध नाही.", "Actual specifications requested by registered buyers on HaldiSetu (not arbitrary assumptions).": "खरेदीदारांनी नोंदवलेल्या प्रत्यक्ष खरेदी अटी (कोणताही खोटा अंदाज नाही).", "Fill your farm profile to get your scheme plan.": "आपल्या शेतीची माहिती भरा आणि शासकीय योजना शिफारस मिळवा.", "Fill your farm profile to get your scheme plan": "आपल्या शेतीची माहिती भरा आणि योजना शिफारस मिळवा", "Action Required to Unlock Highest Rate:": "सर्वाधिक भाव मिळवण्यासाठी आवश्यक कृती:", "Action Required to Unlock Highest Rate": "सर्वाधिक भाव मिळवण्यासाठी आवश्यक कृती", "Turmeric Market Recommendation (AI Agent)": "हळद बाजार भाव शिफारस (एआय सल्लागार)", "Turmeric Market Recommendation": "हळद बाजार भाव शिफारस", "Where Should I Sell? · Sell-Channel Advisor": "मी कुठे विक्री करावी? · विक्री-मार्ग सल्लागार", "Where Should I Sell?": "मी कुठे विक्री करावी?", "Where should I sell?": "मी कुठे विक्री करावी?", "Sell-Channel Advisor Agent": "विक्री-मार्ग सल्लागार एजंट", "Sell-Channel Advisor": "विक्री-मार्ग सल्लागार", "Channel-by-Channel Comparison": "सर्व विक्री मार्गांची तुलना", "Industry Procurement Standards (Derived from Stored Buyer Demands)": "उद्योग खरेदी मानके (खरेदीदारांच्या प्रत्यक्ष मागण्यांवर आधारित)", "Direct Farmer-to-Industry Marketplace": "शेतकरी ते थेट उद्योग बाजारपेठ", "Open auction · No lab certificate needed": "खुला लिलाव · लॅब प्रमाणपत्राची सक्ती नाही", "Adjusted estimate for your lot": "तुमच्या हळदीचा अपेक्षित समायोजित भाव", "Best direct offer on HaldiSetu": "हळदीसेतूवरील सर्वोत्तम थेट ऑफर", "Difference: best offer − mandi": "फरक: सर्वोत्तम ऑफर − बाजार समिती", "Negotiation helper — draft my offer": "बोलणी मदतनीस — माझा प्रस्ताव तयार करा", "Update Quality Card / Add Lab Test": "गुणवत्ता कार्ड सुधारा / लॅब टेस्ट जोडा", "Update Quality Card": "गुणवत्ता कार्ड सुधारा", "Edit quality card": "गुणवत्ता कार्ड सुधारा", "Edit Quality Card": "गुणवत्ता कार्ड सुधारा", "Upload your land record to start selling": "विक्री सुरू करण्यासाठी सातबारा/८अ उतारा अपलोड करा", "Upload your land record": "सातबारा/८अ उतारा अपलोड करा", "Your account is approved": "तुमचे खाते मंजूर आहे", "Your account is pending": "तुमचे खाते प्रलंबित आहे", "Your account is": "तुमचे खाते", "to start selling": "विक्री सुरू करण्यासाठी", "Connect & Draft Offer →": "खरेदीदाराशी संपर्क साधा व ऑफर पाठवा →", "Connect & Draft Offer": "खरेदीदाराशी संपर्क साधा व ऑफर पाठवा", "Negotiate & sell directly": "थेट बोलणी करा आणि विका", "View Mandi Prices →": "बाजार भाव पहा →", "View Mandi Prices": "बाजार भाव पहा", "View Mandis": "बाजार समित्या पहा", "No mandi data loaded yet.": "अजून बाजार भाव लोड केलेले नाहीत.", "No mandi data loaded yet": "अजून बाजार भाव लोड केलेले नाहीत", "Today's market summary": "आजचा बाजार सारांश", "Price alerts": "भाव सूचना (अलर्ट)", "Mark as read": "वाचले म्हणून खूण करा", "Your action calendar": "तुमची कृती दिनदर्शिका", "Active deals": "सुरू सौदे व बिले", "active deal(s)": "सक्रिय व्यवहार", "open lots": "नोंदवलेला माल", "strong buyer match(es)": "योग्य खरेदीदार जुळणी", "Browse buyer demands": "खरेदीदारांच्या मागण्या पहा", "+ New lot (speak or type)": "+ नवीन माल नोंदवा (बोला किंवा लिहा)", "New lot (speak or type)": "नवीन माल नोंदवा (बोला किंवा लिहा)", "Fresh vs dried": "ओली वि. वाळलेली हळद", "Leaf check": "पानांची तपासणी (रोग शोध)", "Disease check": "रोग तपासणी", "Government scheme assistant": "शासकीय योजना सहाय्यक", "Schemes": "शासकीय योजना", "Marketplace": "बाजारपेठ", "Market prices": "बाजार भाव", "Dashboard": "डॅशबोर्ड", "Farmer dashboard": "शेतकरी डॅशबोर्ड", "Buyer dashboard": "खरेदीदार डॅशबोर्ड", "Admin dashboard": "प्रशासक डॅशबोर्ड", "Logout": "लॉगआउट", "Login": "लॉगिन", "Register": "नोंदणी", "Namaste,": "नमस्कार,", "Namaste": "नमस्कार", "Module 1 · Schemes": "विभाग १ · शासकीय योजना", "Module 2 · Marketplace": "विभाग २ · बाजारपेठ", "Module 3 · Prices": "विभाग ३ · बाजार भाव", "Deals": "सुरू सौदे", "Enquiries": "चौकशी संदेश", "Quality card": "गुणवत्ता कार्ड", "declared by you — not a lab test": "शेतकऱ्याने घोषित केलेले — लॅब चाचणी नाही", "Price for your lot": "तुमच्या हळदीचा अपेक्षित भाव", "Mandi baseline (median modal)": "बाजार समिती सरासरी भाव (मोडल)", "Negotiation floor:": "किमान बोलणी तळ (फ्लोर):", "Sell-when planner": "विक्री वेळ नियोजक", "Matching buyers": "जुळणारे खरेदीदार", "Turmeric leaf disease check": "हळद पान रोग तपासणी", "Upload a photo of a turmeric leaf": "हळदीच्या पानाचा फोटो अपलोड करा", "Analyze leaf": "पानाची तपासणी करा", "Tell us about your farm.": "तुमच्या शेतीबद्दल माहिती द्या.", "Tell us about your farm": "तुमच्या शेतीबद्दल माहिती द्या", "Land you cultivate (hectares)": "तुम्ही किती जमीन कसता (हेक्टर)", "Do you own the land?": "जमीन तुमच्या नावावर आहे का?", "Farmer category": "शेतकरी प्रकार", "Current stage of turmeric farming": "हळद शेतीची सध्याची अवस्था", "Tick the documents you already have": "तुमच्याकडे असलेल्या कागदपत्रांवर खूण करा", "Save and find schemes": "जतन करा आणि योजना शोधा", "Your location (District / Market / State)": "आपले ठिकाण (जिल्हा / बाजार / राज्य)", "Turmeric variety (optional)": "हळदीची जात (ऐच्छिक)", "Turmeric variety": "हळदीची जात", "Quantity to sell": "विक्रीचे प्रमाण", "Transport cost (₹/quintal, optional)": "वाहतूक खर्च (₹/क्विंटल, ऐच्छिक)", "Transport cost": "वाहतूक खर्च", "Get recommendation": "शिफारस मिळवा", "Industry procurement prices": "उद्योग खरेदी भाव", "Food & Spice Processing": "अन्न व मसाला उद्योग", "Medicine & Nutraceuticals": "औषध व न्यूट्रास्युटिकल्स", "Cosmetics & Natural Dye": "सौंदर्यप्रसाधने व नैसर्गिक रंग", "Research Lab & Extract Maker": "संशोधन प्रयोगशाळा व अर्क उत्पादक", "Food & spice company": "अन्न व मसाला कंपनी", "Medicine / nutraceutical maker": "औषध व न्यूट्रास्युटिकल्स उत्पादक", "Cosmetics / natural-dye maker": "सौंदर्यप्रसाधने व नैसर्गिक रंग उत्पादक", "Research lab / extract maker": "संशोधन प्रयोगशाळा / अर्क उत्पादक", "Food & Spice": "अन्न व मसाला", "Medicine": "औषध निर्माण", "Cosmetics": "सौंदर्यप्रसाधने", "Research / Extract": "संशोधन व अर्क", "Recommended Route:": "शिफारस केलेला मार्ग:", "Recommended Route": "शिफारस केलेला मार्ग", "Expected Price:": "अपेक्षित भाव:", "Expected Price": "अपेक्षित भाव", "Immediate Sale": "तातडीने रोख विक्री", "Fully Qualified": "पूर्णपणे पात्र", "Needs Quality Document": "गुणवत्ता प्रमाणपत्र हवे", "Requirements Mismatched": "अटी जुळत नाहीत", "No Open Demand": "मागणी उपलब्ध नाही", "All buyer criteria met": "सर्व खरेदीदार अटी पूर्ण", "Spread vs Mandi": "बाजार समितीशी फरक", "Suitability / Status": "पात्रता / स्थिती", "Blocker / Unlock Action": "अडचण / आवश्यक कृती", "over Mandi": "बाजार समितीपेक्षा जास्त", "total extra gross": "एकूण अतिरिक्त नफा", "mandi median/q": "बाजार समिती सरासरी/क्विंटल", "mandi median": "बाजार समिती सरासरी", "per quintal": "प्रति क्विंटल", "Per quintal": "प्रति क्विंटल", "Curcumin:": "कर्क्युमिन:", "Curcumin": "कर्क्युमिन", "Moisture:": "ओलावा:", "Moisture": "ओलावा", "Lab Certificate:": "लॅब प्रमाणपत्र:", "Lab report": "लॅब अहवाल", "Lab Report": "लॅब अहवाल", "Product Form": "मालाचा प्रकार", "Product form": "मालाचा प्रकार", "Quantity": "प्रमाण (वजन)", "Location": "ठिकाण", "Variety": "जात", "All States": "सर्व राज्ये", "All Districts": "सर्व जिल्हे", "All Markets": "सर्व बाजार समित्या", "All Varieties": "सर्व जाती", "State": "राज्य", "District": "जिल्हा", "Market (Mandi)": "बाजार समिती (मंडी)", "Market": "बाजार समिती", "Commodity": "पीक/शेतमाल", "Modal price (₹/q)": "मोडल भाव (₹/क्विंटल)", "Modal price": "मोडल भाव", "Minimum (₹/q)": "किमान भाव (₹/क्विंटल)", "Minimum price": "किमान भाव", "Maximum (₹/q)": "कमाल भाव (₹/क्विंटल)", "Maximum price": "कमाल भाव", "Arrival date": "आवक तारीख", "Reported date": "नोंदणी तारीख", "Data status": "माहिती स्थिती", "Price / reference": "दर / संदर्भ", "Price type": "दराचा प्रकार", "Product form / grade": "मालाचा प्रकार / दर्जा", "Wholesale reference": "घाऊक बाजार संदर्भ", "Official mandi price": "अधिकृत बाजार समिती भाव", "Processed ingredient listing": "प्रक्रिया केलेला माल सूची", "Extraction-grade benchmark": "अर्क दर्जा संदर्भ", "Verified published reference": "सत्यापित अधिकृत संदर्भ", "No verified price available": "सत्यापित भाव उपलब्ध नाही", "Apply filters": "फिल्टर लावा", "Clear filters": "फिल्टर काढा", "View all districts": "सर्व जिल्हे पहा", "View all": "सर्व पहा", "Required": "आवश्यक", "Not required": "आवश्यक नाही", "Lab Certified": "लॅब प्रमाणित", "Declared": "घोषित केलेले", "not declared": "घोषित नाही", "not tested": "तपासणी झालेली नाही", "Test buyer": "नमुना खरेदीदार (डेमो)", "test buyer": "नमुना खरेदीदार (डेमो)", "test buyers": "नमुना खरेदीदार (डेमो)", "SAMPLE DATA": "नमुना माहिती (डेमो)", "Historical data": "जुनी माहिती", "Gross": "एकूण रक्कम", "Net": "निव्वळ रक्कम", "Bill": "बिल क्र.", "Buyer": "खरेदीदार", "Total": "एकूण", "Status": "स्थिती", "Action": "कृती", "Channel": "विक्री मार्ग", "Source": "स्रोत", "Unit": "एकक", "Quintal": "क्विंटल", "Kg": "किलो", "Tonne": "टन", "Dried turmeric (finger)": "वाळलेली हळद (हळकुंड)", "Dried turmeric (bulb)": "वाळलेली हळद (गड्डा)", "Fresh rhizome": "ओली हळद (कच्ची)", "Polished turmeric": "पॉलिश हळद", "Turmeric powder": "हळद पावडर", "Turmeric": "हळद", "Finger": "हळकुंड", "Bulb": "गड्डा"},
+    hi: {"Best direct offer for your lots right now": "आपकी हल्दी के लिए अभी का सर्वश्रेष्ठ सीधा प्रस्ताव", "offered prices on HaldiSetu, not official market prices": "हल्दीसेतु पर दर्ज दरें, आधिकारिक मंडी भाव नहीं", "Uses only stored official mandi records. No invented prices.": "केवल वास्तविक सरकारी मंडी रिकॉर्ड का उपयोग। कोई काल्पनिक भाव नहीं।", "Get optimal mandi recommendations based on your location, turmeric variety, and quantity.": "अपने स्थान, किस्म और मात्रा के आधार पर सर्वश्रेष्ठ मंडी की सिफारिश प्राप्त करें।", "Compares local mandi with 4 industrial buyers for your lot": "स्थानीय मंडी और ४ उद्योग खरीदारों के भावों की तुलना करके सर्वश्रेष्ठ रास्ता बताता है", "No verified industry procurement price is currently available for this category.": "इस श्रेणी के लिए वर्तमान में कोई सत्यापित उद्योग खरीद मूल्य उपलब्ध नहीं है।", "Actual specifications requested by registered buyers on HaldiSetu (not arbitrary assumptions).": "पंजीकृत खरीदारों द्वारा मांगी गई वास्तविक शर्तें (कोई काल्पनिक अनुमान नहीं)।", "Fill your farm profile to get your scheme plan.": "अपनी कृषि प्रोफ़ाइल भरें और सरकारी योजना सुझाव पाएं।", "Fill your farm profile to get your scheme plan": "अपनी कृषि प्रोफ़ाइल भरें और योजना सुझाव पाएं", "Action Required to Unlock Highest Rate:": "सर्वोत्तम भाव पाने के लिए आवश्यक कार्रवाई:", "Action Required to Unlock Highest Rate": "सर्वोत्तम भाव पाने के लिए आवश्यक कार्रवाई", "Turmeric Market Recommendation (AI Agent)": "हल्दी मंडी अनुशंसा (एआई सलाहकार)", "Turmeric Market Recommendation": "हल्दी मंडी अनुशंसा", "Where Should I Sell? · Sell-Channel Advisor": "मैं कहाँ बेचूँ? · बिक्री चैनल सलाहकार", "Where Should I Sell?": "मैं कहाँ बेचूँ?", "Where should I sell?": "मैं कहाँ बेचूँ?", "Sell-Channel Advisor Agent": "बिक्री चैनल सलाहकार एजेंट", "Sell-Channel Advisor": "बिक्री चैनल सलाहकार", "Channel-by-Channel Comparison": "सभी बिक्री चैनलों की तुलना", "Industry Procurement Standards (Derived from Stored Buyer Demands)": "उद्योग खरीद मानक (खरीदारों की वास्तविक मांगों पर आधारित)", "Direct Farmer-to-Industry Marketplace": "किसान-से-उद्योग सीधा मार्केटप्लेस", "Open auction · No lab certificate needed": "खुली नीलामी · लैब प्रमाण पत्र अनिवार्य नहीं", "Adjusted estimate for your lot": "आपकी फसल का अनुमानित समायोजित भाव", "Best direct offer on HaldiSetu": "हल्दीसेतु पर सर्वश्रेष्ठ सीधा प्रस्ताव", "Difference: best offer − mandi": "अंतर: सर्वश्रेष्ठ प्रस्ताव − मंडी", "Negotiation helper — draft my offer": "बातचीत सहायक — मेरा प्रस्ताव तैयार करें", "Update Quality Card / Add Lab Test": "गुणवत्ता कार्ड संपादित करें / लैब टेस्ट जोड़ें", "Update Quality Card": "गुणवत्ता कार्ड संपादित करें", "Edit quality card": "गुणवत्ता कार्ड संपादित करें", "Edit Quality Card": "गुणवत्ता कार्ड संपादित करें", "Upload your land record to start selling": "बिक्री शुरू करने के लिए भूमि रिकॉर्ड अपलोड करें", "Upload your land record": "भूमि रिकॉर्ड अपलोड करें", "Your account is approved": "आपका खाता स्वीकृत है", "Your account is pending": "आपका खाता लंबित है", "Your account is": "आपका खाता", "to start selling": "बिक्री शुरू करने के लिए", "Connect & Draft Offer →": "खरीदार से संपर्क करें व प्रस्ताव भेजें →", "Connect & Draft Offer": "खरीदार से संपर्क करें व प्रस्ताव भेजें", "Negotiate & sell directly": "सीधी बातचीत करें और बेचें", "View Mandi Prices →": "मंडी भाव देखें →", "View Mandi Prices": "मंडी भाव देखें", "View Mandis": "मंडियां देखें", "No mandi data loaded yet.": "अभी मंडी डेटा लोड नहीं हुआ है।", "No mandi data loaded yet": "अभी मंडी डेटा लोड नहीं हुआ है", "Today's market summary": "आज का मंडी सारांश", "Price alerts": "मूल्य अलर्ट", "Mark as read": "पढ़ा हुआ चिह्नित करें", "Your action calendar": "आपका कार्य कैलेंडर", "Active deals": "सक्रिय सौदे एवं बिल", "active deal(s)": "सक्रिय सौदे", "open lots": "खुली फसल लॉट", "strong buyer match(es)": "सटीक खरीदार मिलान", "Browse buyer demands": "खरीदार मांगें देखें", "+ New lot (speak or type)": "+ नया लॉट जोड़ें (बोलें या लिखें)", "New lot (speak or type)": "नया लॉट जोड़ें (बोलें या लिखें)", "Fresh vs dried": "ताजी बनाम सूखी हल्दी", "Leaf check": "पत्ती जांच (रोग पहचान)", "Disease check": "रोग जांच", "Government scheme assistant": "सरकारी योजना सहायक", "Schemes": "सरकारी योजनाएं", "Marketplace": "मार्केटप्लेस", "Market prices": "मंडी भाव", "Dashboard": "डैशबोर्ड", "Farmer dashboard": "किसान डैशबोर्ड", "Buyer dashboard": "क्रेता डैशबोर्ड", "Admin dashboard": "प्रशासक डैशबोर्ड", "Logout": "लॉगआउट", "Login": "लॉगिन", "Register": "पंजीकरण", "Namaste,": "नमस्ते,", "Namaste": "नमस्ते", "Module 1 · Schemes": "मॉड्यूल १ · सरकारी योजनाएं", "Module 2 · Marketplace": "मॉड्यूल २ · मार्केटप्लेस", "Module 3 · Prices": "मॉड्यूल ३ · मंडी भाव", "Deals": "सक्रिय सौदे", "Enquiries": "पूछताछ", "Quality card": "गुणवत्ता कार्ड", "declared by you — not a lab test": "किसान द्वारा घोषित — लैब टेस्ट नहीं", "Price for your lot": "आपकी फसल का अनुमानित मूल्य", "Mandi baseline (median modal)": "मंडी औसत मूल्य (मॉडल)", "Negotiation floor:": "न्यूनतम वार्ता तल (फ्लोर):", "Sell-when planner": "बिक्री समय नियोजक", "Matching buyers": "अनुकूल खरीदार", "Turmeric leaf disease check": "हल्दी पत्ती रोग जांच", "Upload a photo of a turmeric leaf": "हल्दी की पत्ती का फोटो अपलोड करें", "Analyze leaf": "पत्ती की जांच करें", "Tell us about your farm.": "अपने खेत के बारे में बताएं।", "Tell us about your farm": "अपने खेत के बारे में बताएं", "Land you cultivate (hectares)": "आप कितनी ज़मीन पर खेती करते हैं (हेक्टेयर)", "Do you own the land?": "क्या ज़मीन आपके नाम है?", "Farmer category": "किसान की श्रेणी", "Current stage of turmeric farming": "हल्दी की खेती की वर्तमान अवस्था", "Tick the documents you already have": "जो दस्तावेज़ आपके पास हैं उन पर निशान लगाएं", "Save and find schemes": "सहेजें और योजनाएं खोजें", "Your location (District / Market / State)": "आपका स्थान (ज़िला / मंडी / राज्य)", "Turmeric variety (optional)": "हल्दी की किस्म (वैकल्पिक)", "Turmeric variety": "हल्दी की किस्म", "Quantity to sell": "बिक्री की मात्रा", "Transport cost (₹/quintal, optional)": "परिवहन लागत (₹/क्विंटल, वैकल्पिक)", "Transport cost": "परिवहन लागत", "Get recommendation": "सिफारिश प्राप्त करें", "Industry procurement prices": "उद्योग खरीद भाव", "Food & Spice Processing": "खाद्य एवं मसाला उद्योग", "Medicine & Nutraceuticals": "दवा एवं न्यूट्रास्यूटिकल्स", "Cosmetics & Natural Dye": "सौंदर्य प्रसाधन एवं प्राकृतिक रंग", "Research Lab & Extract Maker": "अनुसंधान प्रयोगशाला एवं निष्कर्ष निर्माता", "Food & spice company": "खाद्य एवं मसाला कंपनी", "Medicine / nutraceutical maker": "दवा एवं न्यूट्रास्यूटिकल निर्माता", "Cosmetics / natural-dye maker": "सौंदर्य प्रसाधन / प्राकृतिक रंग निर्माता", "Research lab / extract maker": "अनुसंधान प्रयोगशाला / अर्क निर्माता", "Food & Spice": "खाद्य एवं मसाला", "Medicine": "दवा निर्माण", "Cosmetics": "सौंदर्य प्रसाधन", "Research / Extract": "अनुसंधान व अर्क", "Recommended Route:": "अनुशंसित विकल्प:", "Recommended Route": "अनुशंसित विकल्प", "Expected Price:": "अपेक्षित भाव:", "Expected Price": "अपेक्षित भाव", "Immediate Sale": "तत्काल बिक्री", "Fully Qualified": "पूर्णतः योग्य", "Needs Quality Document": "गुणवत्ता दस्तावेज चाहिए", "Requirements Mismatched": "शर्तें मेल नहीं खातीं", "No Open Demand": "मांग उपलब्ध नहीं", "All buyer criteria met": "खरीदार के सभी मानदंड पूर्ण", "Spread vs Mandi": "मंडी से अंतर", "Suitability / Status": "पात्रता / स्थिति", "Blocker / Unlock Action": "बाधा / आवश्यक कार्रवाई", "over Mandi": "मंडी से अधिक", "total extra gross": "कुल अतिरिक्त लाभ", "mandi median/q": "मंडी औसत/क्विंटल", "mandi median": "मंडी औसत", "per quintal": "प्रति क्विंटल", "Per quintal": "प्रति क्विंटल", "Curcumin:": "करक्यूमिन:", "Curcumin": "करक्यूमिन", "Moisture:": "नमी:", "Moisture": "नमी", "Lab Certificate:": "लैब प्रमाणपत्र:", "Lab report": "लैब रिपोर्ट", "Lab Report": "लैब रिपोर्ट", "Product Form": "उत्पाद रूप", "Product form": "उत्पाद रूप", "Quantity": "मात्रा (वजन)", "Location": "स्थान", "Variety": "किस्म", "All States": "सभी राज्य", "All Districts": "सभी ज़िले", "All Markets": "सभी मंडियां", "All Varieties": "सभी किस्में", "State": "राज्य", "District": "ज़िला", "Market (Mandi)": "कृषि उपज मंडी", "Market": "मंडी", "Commodity": "फसल/जिंस", "Modal price (₹/q)": "मॉडल भाव (₹/क्विंटल)", "Modal price": "मॉडल भाव", "Minimum (₹/q)": "न्यूनतम भाव (₹/क्विंटल)", "Minimum price": "न्यूनतम भाव", "Maximum (₹/q)": "अधिकतम भाव (₹/क्विंटल)", "Maximum price": "अधिकतम भाव", "Arrival date": "आवक तिथि", "Reported date": "रिपोर्ट तिथि", "Data status": "डेटा स्थिति", "Price / reference": "दर / संदर्भ", "Price type": "दर का प्रकार", "Product form / grade": "उत्पाद रूप / ग्रेड", "Wholesale reference": "थोक संदर्भ", "Official mandi price": "आधिकारिक मंडी भाव", "Processed ingredient listing": "प्रसंस्कृत घटक सूची", "Extraction-grade benchmark": "निष्कर्षण ग्रेड बेंचमार्क", "Verified published reference": "सत्यापित प्रकाशित संदर्भ", "No verified price available": "सत्यापित भाव उपलब्ध नहीं", "Apply filters": "फ़िल्टर लागू करें", "Clear filters": "फ़िल्टर हटाएं", "View all districts": "सभी ज़िले देखें", "View all": "सभी देखें", "Required": "अनिवार्य", "Not required": "अनिवार्य नहीं", "Lab Certified": "लैब प्रमाणित", "Declared": "घोषित", "not declared": "घोषित नहीं", "not tested": "परीक्षण नहीं हुआ", "Test buyer": "नमूना खरीदार (डेमो)", "test buyer": "नमूना खरीदार (डेमो)", "test buyers": "नमूना खरीदार (डेमो)", "SAMPLE DATA": "नमूना डेटा (डेमो)", "Historical data": "पुराना डेटा", "Gross": "सकल राशि", "Net": "शुद्ध राशि", "Bill": "बिल सं.", "Buyer": "खरीदार", "Total": "कुल", "Status": "स्थिति", "Action": "कार्रवाई", "Channel": "बिक्री चैनल", "Source": "स्रोत", "Unit": "इकाई", "Quintal": "क्विंटल", "Kg": "किलो", "Tonne": "टन", "Dried turmeric (finger)": "सूखी हल्दी (फिंगर)", "Dried turmeric (bulb)": "सूखी हल्दी (गांठ)", "Fresh rhizome": "ताजी हल्दी (कच्ची)", "Polished turmeric": "पॉलिश हल्दी", "Turmeric powder": "हल्दी पाउडर", "Turmeric": "हल्दी", "Finger": "फिंगर", "Bulb": "गांठ"}
+  };
+
+  var d = DICTS[lang];
+  if (!d) return;
+
+  // Pre-sort phrases by length descending to match longest composite sentences first
+  var sortedKeys = Object.keys(d).sort(function(a, b) {
+    return b.length - a.length;
+  });
+
+  function translateStr(str) {
+    if (!str || typeof str !== 'string' || str.length < 2) return str;
+    var res = str;
+    for (var i = 0; i < sortedKeys.length; i++) {
+      var phrase = sortedKeys[i];
+      if (res.indexOf(phrase) !== -1) {
+        res = res.split(phrase).join(d[phrase]);
+      }
+    }
+    return res;
+  }
+
+  function translateElement(el) {
+    if (!el || (el.classList && el.classList.contains('lang-nav'))) return;
+
+    // Translate attributes
+    if (el.placeholder) {
+      el.placeholder = translateStr(el.placeholder);
+    }
+    if (el.title) {
+      el.title = translateStr(el.title);
+    }
+    if (el.tagName === 'INPUT' && (el.type === 'submit' || el.type === 'button')) {
+      el.value = translateStr(el.value);
+    }
+    if (el.tagName === 'OPTION') {
+      el.textContent = translateStr(el.textContent);
+    }
+
+    // Traverse child nodes
+    var children = el.childNodes;
+    for (var i = 0; i < children.length; i++) {
+      var child = children[i];
+      if (child.nodeType === 3) { // Text node
+        var text = child.nodeValue;
+        if (text && text.trim().length > 0) {
+          var trans = translateStr(text);
+          if (trans !== text) {
+            child.nodeValue = trans;
+          }
+        }
+      } else if (child.nodeType === 1 && child.tagName !== 'SCRIPT' && child.tagName !== 'STYLE') {
+        translateElement(child);
+      }
+    }
+  }
+
+  function runTranslation() {
+    translateElement(document.body);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', runTranslation);
+  } else {
+    runTranslation();
+  }
+
+  // Watch for dynamic DOM changes (e.g. tabs, ajax, calculators)
+  if (window.MutationObserver) {
+    var obs = new MutationObserver(function(mutations) {
+      obs.disconnect();
+      for (var i = 0; i < mutations.length; i++) {
+        var m = mutations[i];
+        if (m.type === 'childList') {
+          for (var j = 0; j < m.addedNodes.length; j++) {
+            if (m.addedNodes[j].nodeType === 1) {
+              translateElement(m.addedNodes[j]);
+            }
+          }
+        } else if (m.type === 'characterData') {
+          var trans = translateStr(m.target.nodeValue);
+          if (trans !== m.target.nodeValue) {
+            m.target.nodeValue = trans;
+          }
+        }
+      }
+      obs.observe(document.body, { childList: true, subtree: true, characterData: true });
+    });
+    obs.observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+})();
+</script>
+</body>
+</html>

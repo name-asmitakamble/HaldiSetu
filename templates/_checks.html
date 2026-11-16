@@ -1,0 +1,8 @@
+{% macro checks(ev) %}
+<ul class="checks">
+  {% for c in ev.checks %}<li class="{{ 't' if c.status == 'pass' else ('f' if c.status == 'fail' else 'u') }}"><strong>{{ c.label }}:</strong> {{ c.detail }}</li>{% endfor %}
+</ul>
+{% endmacro %}
+{% macro badge(ev) %}
+<span class="badge {{ 'ok' if ev.label == 'Strong match' else ('warn' if ev.label in ('Possible match','Group lots needed') else 'grey') }}">{{ ev.label }} · {{ ev.met }}/{{ ev.total }}</span>
+{% endmacro %}

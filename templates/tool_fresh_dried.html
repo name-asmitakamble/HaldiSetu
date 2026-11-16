@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Fresh vs dried{% endblock %}
+{% block content %}
+<h1>Sell fresh or boil &amp; dry?</h1>
+<p class="muted">Uses <strong>your own numbers</strong>. HaldiSetu does not assume a conversion ratio — check the fresh-to-dry ratio for your variety with a local KVK / Spices Board source.</p>
+<form method="get" class="card form-grid">
+  <div><label for="fresh_q">Fresh turmeric you have (quintal)</label><input id="fresh_q" name="fresh_q" type="number" step="any" min="0" required value="{{ a.get('fresh_q','') }}"></div>
+  <div><label for="fresh_price">Fresh price offered (₹/quintal)</label><input id="fresh_price" name="fresh_price" type="number" step="any" min="0" required value="{{ a.get('fresh_price','') }}"></div>
+  <div><label for="dried_price">Expected dried price (₹/quintal)</label><input id="dried_price" name="dried_price" type="number" step="any" min="0" required value="{{ a.get('dried_price','') }}"></div>
+  <div><label for="ratio">Fresh kg needed for 1 kg dried</label><input id="ratio" name="ratio" type="number" step="any" min="0" required value="{{ a.get('ratio','') }}"><div class="hint">Enter your verified ratio.</div></div>
+  <div><label for="cost">Boiling + drying + labour cost (₹ per quintal of FRESH)</label><input id="cost" name="cost" type="number" step="any" min="0" value="{{ a.get('cost','') }}"></div>
+  <div class="full"><button class="btn" type="submit">Compare</button></div>
+</form>
+{% if res %}
+<div class="card" style="margin-top:16px"><h2>Result</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Sell fresh now</th><td class="num">{{ res.fresh_rev|inr }}</td></tr>
+    <tr><th>Dried quantity you would get</th><td class="num">{{ '%.2f'|format(res.dried_q) }} q</td></tr>
+    <tr><th>Dried revenue</th><td class="num">{{ res.dried_rev|inr }}</td></tr>
+    <tr><th>Processing cost</th><td class="num">{{ res.cost|inr }}</td></tr>
+    <tr><th>Dried, after cost</th><td class="num"><strong>{{ res.net_dried|inr }}</strong></td></tr>
+    <tr><th>Difference (dried − fresh)</th><td class="num"><strong>{{ '+' if res.diff >= 0 }}{{ res.diff|inr }}</strong></td></tr>
+    <tr><th>Break-even dried price</th><td class="num">{{ res.breakeven_dried_price|inr }}/q</td></tr>
+  </table></div>
+  <p class="hint">Does not include time, storage risk or price changes while drying (usually weeks). The dried price is only an expectation.</p></div>
+{% endif %}
+{% endblock %}

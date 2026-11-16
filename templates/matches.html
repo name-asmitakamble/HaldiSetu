@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% from "_checks.html" import checks, badge %}
+{% block title %}AI matches{% endblock %}
+{% block content %}
+<h1>AI matches</h1>
+<p class="muted">
+  {% if user.role == 'farmer' %}The AI compares each of your open lots with every open buyer demand.
+  {% else %}The AI compares each of your open demands with every open farmer lot.{% endif %}
+  Scores come from the rule-based matching engine, so every result can be checked.
+  {% if ai_mode == 'llm' %}The AI also writes the short explanation.{% else %}Explanations are generated from the same rules (AI writing is off: no API key set).{% endif %}
+</p>
+<div class="notice info small"><strong>How you get connected:</strong>
+  1) AI finds a match &rarr; 2) the farmer offers the lot &rarr; 3) the buyer shortlists or proposes a deal &rarr;
+  4) the farmer confirms &rarr; 5) phone numbers appear under <a href="{{ url_for('deals.connections') }}">Connections</a>.
+  HaldiSetu does not handle payment and does not guarantee a sale.</div>
+
+<form method="post" action="{{ url_for('mp.matches_refresh') }}" style="margin:14px 0">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <button class="btn" type="submit">Find new matches now</button>
+</form>
+
+{% for r in rows %}
+{% set p, lot, d, ev, resp = r.p, r.lot, r.d, r.ev, r.resp %}
+<div class="card" style="margin-top:12px">
+  <div class="row-actions" style="justify-content:space-between">
+    <h3 style="margin:0">Lot #{{ lot.listing_id }} ↔ Demand #{{ d.demand_id }}</h3>
+    <span><span class="badge ok">AI score {{ '%.0f'|format(p.score) }}/100</span> {{ badge(ev) }}</span>
+  </div>
+  <p class="small muted">
+    Lot: {{ lot.product_form }}, {{ '%g'|format(lot.quantity) }} {{ lot.quantity_unit }}, {{ lot.location }}, asking {{ lot.expected_price|inr }} {{ lot.price_unit }}
+    · Demand: {{ d.industry_type }}, {{ '%g'|format(d.quantity) }} {{ d.quantity_unit }}, {{ d.product_form }}, offering {{ d.offered_price|inr }} {{ d.price_unit }}, deliver to {{ d.delivery_location }}
+  </p>
+  <p>{{ p.explanation }}</p>
+  {% if user.role == 'farmer' %}{{ checks(ev) }}{% endif %}
+
+  <div class="row-actions">
+    {% if resp %}
+      <span class="badge ok">Offer sent · {{ resp.status }}</span>
+      {% if resp.deal %}<a class="btn small secondary" href="{{ url_for('deals.detail', did=resp.deal.deal_id) }}">View deal {{ resp.deal.bill_no }} ({{ resp.deal.status }})</a>{% endif %}
+      <a class="btn small secondary" href="{{ url_for('mp.demand_detail', did=d.demand_id) }}">Open demand</a>
+    {% elif user.role == 'farmer' %}
+      {% if p.status == 'interested' %}<span class="badge ok">Buyer is interested</span>{% endif %}
+      <form method="post" action="{{ url_for('mp.match_accept', pid=p.id) }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="btn small" type="submit">Offer my lot to this buyer</button></form>
+    {% else %}
+      {% if p.status == 'interested' %}<span class="badge ok">You showed interest · waiting for the farmer's offer</span>
+      {% else %}
+      <form method="post" action="{{ url_for('mp.match_interest', pid=p.id) }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="btn small" type="submit">I'm interested</button></form>{% endif %}
+      <a class="btn small secondary" href="{{ url_for('mp.demand_detail', did=d.demand_id) }}">Open my demand</a>
+    {% endif %}
+    {% if not resp %}
+    <form method="post" action="{{ url_for('mp.match_dismiss', pid=p.id) }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <button class="btn secondary small" type="submit">Not relevant</button></form>
+    {% endif %}
+  </div>
+</div>
+{% else %}
+<div class="notice info" style="margin-top:14px">No AI matches yet.
+  {% if user.role == 'farmer' %}Add a lot with a quality card (moisture, curcumin, lab report) and the AI will look for buyers.
+  {% else %}Post a demand and the AI will look for farmer lots that meet it.{% endif %}</div>
+{% endfor %}
+{% endblock %}

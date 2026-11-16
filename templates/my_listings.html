@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}My listings{% endblock %}
+{% block content %}
+<div class="row-actions" style="justify-content:space-between"><h1>My listings</h1>
+  <a class="btn" href="{{ url_for('listing_new') }}">+ New listing</a></div>
+<div class="table-wrap"><table>
+  <tr><th>#</th><th>Product</th><th>Quantity</th><th>Expected price</th><th>Location</th><th>Status</th><th>Enquiries</th><th></th></tr>
+  {% for l in rows %}
+  <tr><td>{{ l.listing_id }}</td><td><a href="{{ url_for('listing_detail', lid=l.listing_id) }}">{{ l.product_form }}</a></td>
+    <td>{{ '%g'|format(l.quantity) }} {{ l.quantity_unit }}</td><td>{{ l.expected_price|inr }} {{ l.price_unit }}</td>
+    <td>{{ l.location }}</td>
+    <td><span class="badge {{ 'ok' if l.listing_status == 'open' else 'grey' }}">{{ l.listing_status }}</span></td>
+    <td>{{ l.enquiries|length }}</td>
+    <td class="row-actions"><a class="btn small" href="{{ url_for('mp.lot', lid=l.listing_id) }}">Matches &amp; price</a><form method="post" action="{{ url_for('listing_status', lid=l.listing_id) }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <button class="btn secondary small" type="submit">{{ 'Close' if l.listing_status == 'open' else 'Reopen' }}</button></form></td></tr>
+  {% else %}<tr><td colspan="8" class="muted">You have no listings yet.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

@@ -1,0 +1,22 @@
+# Environment secrets
+.env
+
+# Python environment
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Database
+*.db
+
+# Private uploads
+private_uploads/
+
+# Temporary files
+*.log
+.DS_Store
+
+static/uploads/

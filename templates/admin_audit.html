@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Audit log{% endblock %}
+{% block content %}
+<h1>Audit log</h1>
+<div class="table-wrap"><table><tr><th>When (UTC)</th><th>Who</th><th>Action</th><th>Entity</th><th>Detail</th></tr>
+  {% for l in logs %}<tr><td>{{ l.created_at.strftime('%d %b %Y %H:%M:%S') }}</td><td>{{ l.actor.name if l.actor else 'system' }}</td><td>{{ l.action }}</td>
+    <td>{{ l.entity or '' }} {{ l.entity_id or '' }}</td><td style="white-space:normal">{{ l.detail or '' }}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">Empty.</td></tr>{% endfor %}</table></div>
+{% endblock %}

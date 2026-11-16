@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Quality card{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('mp.lot', lid=l.listing_id) }}">← Lot #{{ l.listing_id }}</a></p>
+<h1>Quality card — lot #{{ l.listing_id }}</h1>
+<div class="notice warn small">Values are declared by you. They are <strong>not</strong> a lab result. A lab report reference makes buyers trust them.</div>
+<form method="post" class="card form-grid" style="margin-top:12px">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  {% include "_quality_fields.html" %}
+  <div class="full"><button class="btn" type="submit">Save quality card</button></div>
+</form>
+{% endblock %}

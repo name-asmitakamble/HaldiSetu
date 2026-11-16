@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Edit scheme{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('dash.admin_schemes') }}">← Schemes</a></p>
+<h1>Edit scheme</h1>
+<form method="post" class="card form-grid">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="full"><label>Scheme name (English)</label><input name="scheme_name" required maxlength="200" value="{{ s.scheme_name }}"></div>
+  <div class="full"><label>Description</label><textarea name="description" rows="2">{{ s.description }}</textarea></div>
+  <div class="full"><label>Eligibility (text)</label><textarea name="eligibility_text" rows="2">{{ s.eligibility_text }}</textarea></div>
+  <div class="full"><label>Benefits</label><textarea name="benefits" rows="2">{{ s.benefits }}</textarea></div>
+  <div class="full"><label>Documents (text)</label><input name="required_documents" value="{{ s.required_documents or '' }}"></div>
+  <div class="full"><label>Official URL</label><input name="official_url" required value="{{ s.official_url }}"></div>
+  <div><label>Last verified on</label><input name="last_verified_date" type="date" value="{{ s.last_verified_date.isoformat() if s.last_verified_date else '' }}"></div>
+  <div class="full"><label>Eligibility rules (JSON) — keys: states, owns_land, min_land_ha, max_land_ha, farmer_types, note</label>
+    <textarea name="eligibility_rules" rows="3" style="font-family:monospace">{{ s.eligibility_rules }}</textarea></div>
+  <fieldset class="full" style="border:1px solid var(--line);border-radius:10px"><legend>Useful at stages</legend>
+    {% for k in STAGE_ORDER %}<label style="display:inline-flex;gap:6px;font-weight:400;margin-right:14px"><input type="checkbox" name="stages" value="{{ k }}" style="width:auto" {{ 'checked' if k in stages }}>{{ STAGES[k]['en'] }}</label>{% endfor %}</fieldset>
+  <fieldset class="full" style="border:1px solid var(--line);border-radius:10px"><legend>Documents needed</legend>
+    {% for k, n in DOCS.items() %}<label style="display:inline-flex;gap:6px;font-weight:400;margin-right:14px"><input type="checkbox" name="docs" value="{{ k }}" style="width:auto" {{ 'checked' if k in docs }}>{{ n['en'] }}</label>{% endfor %}</fieldset>
+  {% for code, lname in LANGS.items() %}
+  <div class="full"><h3 class="section-title">{{ lname }}</h3></div>
+  <div class="full"><label>Name ({{ code }})</label><input name="name_{{ code }}" value="{{ names.get(code, '') }}"></div>
+  <div class="full"><label>Highlights ({{ code }})</label><textarea name="hl_{{ code }}" rows="3">{{ hl.get(code, '') }}</textarea></div>
+  <div class="full"><label>Application steps ({{ code }}) — one per line</label><textarea name="steps_{{ code }}" rows="5">{{ (steps.get(code, []))|join('\n') }}</textarea></div>
+  {% endfor %}
+  <div class="full"><button class="btn" type="submit">Save</button></div>
+</form>
+{% endblock %}

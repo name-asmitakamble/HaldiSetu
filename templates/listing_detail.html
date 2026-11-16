@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Listing #{{ l.listing_id }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('listings') }}">← All listings</a></p>
+<div class="card">
+  <span class="badge {{ 'ok' if l.listing_status == 'open' else 'grey' }}">{{ l.listing_status|capitalize }}</span>
+  <h1 style="margin-top:8px">{{ l.product_form }}</h1>
+  <div class="table-wrap"><table>
+    <tr><th>Quantity</th><td>{{ '%g'|format(l.quantity) }} {{ l.quantity_unit }}</td></tr>
+    <tr><th>Expected price</th><td>{{ l.expected_price|inr }} {{ l.price_unit }}</td></tr>
+    <tr><th>Quality details</th><td style="white-space:normal">{{ l.quality_details or 'Not provided' }}</td></tr>
+    <tr><th>Location</th><td>{{ l.location }}</td></tr>
+    <tr><th>Available from</th><td>{{ l.availability_date|dmy }}</td></tr>
+    <tr><th>Farmer</th><td>{{ l.farmer.name }}{% if l.farmer.district %}, {{ l.farmer.district }}{% endif %}</td></tr>
+    {% if l.quality %}
+    <tr><th>Variety</th><td>{{ l.quality.variety or 'Not declared' }}</td></tr>
+    <tr><th>Moisture</th><td>{{ (l.quality.moisture_pct|string + '%') if l.quality.moisture_pct is not none else 'Not declared' }}</td></tr>
+    <tr><th>Curcumin</th><td>{% if l.quality.curcumin_pct is not none %}{{ l.quality.curcumin_pct }}% ({{ 'lab report: ' ~ l.quality.lab_report_ref if l.quality.has_lab_report else 'self-declared, no lab report' }}){% else %}Not tested{% endif %}</td></tr>
+    {% endif %}
+    <tr><th>Posted</th><td>{{ l.created_at|dmy }}</td></tr>
+  </table></div>
+  <p class="hint">The farmer's phone number is not public. Send an enquiry; the farmer will contact you if interested.</p>
+</div>
+
+{% if l.listing_status == 'open' %}
+  {% if user and user.role == 'buyer' %}
+    <div class="card" style="margin-top:16px"><h2>Send an enquiry</h2>
+      {% if already %}<div class="notice info">You already have an open enquiry on this listing. See <a href="{{ url_for('my_enquiries') }}">your enquiries</a>.</div>
+      {% else %}
+      <form method="post" action="{{ url_for('enquire', lid=l.listing_id) }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <label for="m">Message (10–500 characters)</label>
+        <textarea id="m" name="enquiry_message" rows="4" maxlength="500" required
+          placeholder="e.g. I would like 20 quintals. Can you share sample quality and delivery terms?"></textarea>
+        <p><button class="btn" type="submit">Send enquiry</button></p>
+        <p class="hint">Your name and mobile number will be shared with the farmer. This is an enquiry, not a purchase.</p>
+      </form>{% endif %}</div>
+  {% elif not user %}
+    <div class="notice info"><a href="{{ url_for('login', next=request.path) }}">Log in</a> or
+      <a href="{{ url_for('register') }}">register</a> as a buyer to send an enquiry.</div>
+  {% elif user.role == 'farmer' %}
+    <div class="notice info">Farmers cannot send enquiries. Manage your listings in <a href="{{ url_for('my_listings') }}">My listings</a>.</div>
+  {% endif %}
+{% else %}
+  <div class="notice warn">This listing is closed and is not accepting enquiries.</div>
+{% endif %}
+{% endblock %}

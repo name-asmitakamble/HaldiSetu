@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% block title %}Where Should I Sell? · Sell-Channel Advisor{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('dash.dashboard') }}">← Farmer Dashboard</a> | <a href="{{ url_for('my_listings') }}">My Lots</a></p>
+
+<div class="row-actions" style="justify-content:space-between;align-items:center;margin-bottom:12px">
+  <div>
+    <h1 style="margin:0">Where Should I Sell?</h1>
+    <p class="muted" style="margin:.2rem 0 0">
+      Sell-Channel Advisor Agent · Compares local mandi with 4 industrial buyers for your lot
+    </p>
+  </div>
+  {% if farmer_lots|length > 1 %}
+  <div>
+    <label for="lot_picker" class="small muted" style="display:inline">Switch Lot:</label>
+    <select id="lot_picker" onchange="window.location.href='/lots/' + this.value + '/where-to-sell?lang={{ res.lang }}'" style="display:inline;width:auto">
+      {% for fl in farmer_lots %}
+      <option value="{{ fl.listing_id }}" {{ 'selected' if fl.listing_id == res.lot.listing_id }}>
+        Lot #{{ fl.listing_id }} — {{ fl.product_form }} ({{ '%g'|format(fl.quantity) }} {{ fl.quantity_unit }})
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+</div>
+
+{# Language Toggle #}
+<div class="row-actions" style="justify-content:flex-end;margin-bottom:14px">
+  <span class="small muted" style="margin-right:6px">Language / भाषा:</span>
+  <a class="badge {{ 'ok' if res.lang == 'en' else 'grey' }}" href="?lang=en">English</a>
+  <a class="badge {{ 'ok' if res.lang == 'mr' else 'grey' }}" href="?lang=mr">मराठी</a>
+  <a class="badge {{ 'ok' if res.lang == 'hi' else 'grey' }}" href="?lang=hi">हिंदी</a>
+</div>
+
+{# PRIMARY AI RECOMMENDATION CARD #}
+<div class="card" style="border:2px solid var(--green);background:#f6faf7;margin-bottom:20px;padding:20px">
+  <div class="row-actions" style="justify-content:space-between;align-items:flex-start">
+    <div>
+      <span class="badge ok" style="font-size:.85rem;padding:4px 12px">🎯 AI ADVISOR RECOMMENDATION</span>
+      <h2 style="margin:.5rem 0 .2rem;font-size:1.6rem;color:var(--green)">
+        Recommended Route: {{ res.recommendation.target_name }}
+      </h2>
+      <div style="font-size:1.15rem;font-weight:700;margin-bottom:8px">
+        Expected Price: ₹{{ '{:,.0f}'.format(res.recommendation.price) }}/quintal
+        {% if res.recommendation.gain_per_q > 0 %}
+        <span class="badge ok" style="margin-left:6px">+₹{{ '{:,.0f}'.format(res.recommendation.gain_per_q) }}/q over Mandi</span>
+        <span class="badge ok">+₹{{ '{:,.0f}'.format(res.recommendation.gain_over_mandi) }} total extra gross</span>
+        {% endif %}
+      </div>
+    </div>
+    {% if res.recommendation.demand_id %}
+    <div>
+      <a class="btn" style="font-size:1.05rem;padding:10px 18px"
+         href="{{ url_for('ag.negotiate', lid=res.lot.listing_id, did=res.recommendation.demand_id) }}">
+        Connect & Draft Offer →
+      </a>
+      <div class="small muted" style="text-align:right;margin-top:4px">Negotiate & sell directly</div>
+    </div>
+    {% elif res.recommendation.winner == 'mandi' %}
+    <div>
+      <a class="btn" style="font-size:1.05rem;padding:10px 18px" href="{{ url_for('market') }}">
+        View Mandi Prices →
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <p style="font-size:1.02rem;line-height:1.5;margin:12px 0 8px;color:#1e3325">
+    <strong>{{ res.recommendation.reason }}</strong>
+  </p>
+
+  {% if res.recommendation.mode == 'unlockable' %}
+  <div class="notice warn" style="margin-top:10px">
+    <strong>Action Required to Unlock Highest Rate:</strong>
+    {{ res.recommendation.unlock_action }}
+    <div style="margin-top:6px">
+      <a class="btn small secondary" href="{{ url_for('mp.lot_quality', lid=res.lot.listing_id) }}">Update Quality Card / Add Lab Test</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="small muted" style="margin-top:12px">
+    ✓ 100% deterministic arithmetic · Stored official mandi records & verified buyer specifications.
+    {% if res.recommendation.polished_by_ai %}<span title="Wording smoothed by Claude; numbers mathematically verified"> · Phrased with AI assistance</span>{% endif %}
+  </div>
+</div>
+
+{# LOT QUALITY SNAPSHOT #}
+<div class="card" style="margin-bottom:20px">
+  <div class="row-actions" style="justify-content:space-between">
+    <h3 style="margin:0">Lot #{{ res.lot.listing_id }} Quality Snapshot</h3>
+    <a class="small" href="{{ url_for('mp.lot_quality', lid=res.lot.listing_id) }}">Edit Quality Card</a>
+  </div>
+  <div class="table-wrap" style="margin-top:10px">
+    <table>
+      <tr>
+        <th>Quantity</th><td><strong>{{ res.lot.quantity_str }}</strong></td>
+        <th>Product Form</th><td>{{ res.lot.product_form }}</td>
+        <th>Location</th><td>{{ res.lot.location }}</td>
+      </tr>
+      <tr>
+        <th>Variety</th><td>{{ res.lot.variety }}</td>
+        <th>Curcumin</th>
+        <td>
+          {% if res.lot.curcumin_pct %}
+          <strong>{{ res.lot.curcumin_pct }}%</strong>
+          {% if res.lot.has_lab_report %}<span class="badge ok">Lab Certified</span>{% else %}<span class="badge warn">Declared</span>{% endif %}
+          {% else %}
+          <span class="muted">Not tested</span>
+          {% endif %}
+        </td>
+        <th>Moisture</th>
+        <td>{{ (res.lot.moisture_pct|string + '%') if res.lot.moisture_pct is not none else 'Not declared' }}</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+{# SELL-CHANNEL COMPARISON TABLE #}
+<h2>Channel-by-Channel Comparison</h2>
+<p class="muted small">Comparing Mandi baseline against 4 turmeric industry procurement sectors.</p>
+
+<div class="table-wrap" style="margin-bottom:24px">
+  <table>
+    <thead>
+      <tr>
+        <th>Channel</th>
+        <th>Expected Price</th>
+        <th>Gross ({{ res.lot.quantity_str }})</th>
+        <th>Spread vs Mandi</th>
+        <th>Suitability / Status</th>
+        <th>Blocker / Unlock Action</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {# Mandi Row #}
+      <tr style="background:#fcfcfc">
+        <td>
+          <strong>🏛️ {{ res.mandi.name }}</strong>
+          <div class="small muted">{{ res.mandi.markets|join(', ') }}</div>
+        </td>
+        <td><strong>₹{{ '{:,.0f}'.format(res.mandi.expected_price) }}/q</strong></td>
+        <td>₹{{ '{:,.0f}'.format(res.mandi.gross_value) }}</td>
+        <td><span class="badge grey">Baseline</span></td>
+        <td><span class="badge ok">Immediate Sale</span></td>
+        <td class="small muted">Open auction · No lab certificate needed</td>
+        <td><a class="btn small secondary" href="{{ url_for('market') }}">View Mandis</a></td>
+      </tr>
+
+      {# Industry Rows #}
+      {% for ind in res.industries %}
+      <tr {% if res.recommendation.target_name == ind.display_name %}style="background:#f1f8f3;border-left:4px solid var(--green)"{% endif %}>
+        <td>
+          <strong>{{ ind.icon }} {{ ind.display_name }}</strong>
+          {% if ind.is_demo %}<div class="small"><span class="badge warn">Test buyer</span></div>{% endif %}
+        </td>
+        <td>
+          {% if ind.expected_price %}
+          <strong>₹{{ '{:,.0f}'.format(ind.expected_price) }}/q</strong>
+          {% else %}
+          <span class="muted">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if ind.gross_value %}
+          ₹{{ '{:,.0f}'.format(ind.gross_value) }}
+          {% else %}
+          <span class="muted">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if ind.diff_vs_mandi is not none %}
+          <span class="badge {{ 'ok' if ind.diff_vs_mandi > 0 else ('err' if ind.diff_vs_mandi < 0 else 'grey') }}">
+            {{ '+' if ind.diff_vs_mandi >= 0 }}₹{{ '{:,.0f}'.format(ind.diff_vs_mandi) }}/q
+          </span>
+          {% else %}
+          <span class="muted">—</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="badge {{ ind.status_class }}">{{ ind.status_label }}</span>
+        </td>
+        <td class="small">
+          {% if ind.status == 'qualified' %}
+          <span style="color:var(--green)">✓ All buyer criteria met</span>
+          {% elif ind.status == 'unlockable' %}
+          <span style="color:#8a6400"><strong>Unlock:</strong> {{ ind.unlock_actions|join('; ') }}</span>
+          {% elif ind.status == 'not_qualified' %}
+          <span class="muted"><strong>Blocker:</strong> {{ ind.blockers|join('; ') }}</span>
+          {% else %}
+          <span class="muted">No open demand</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if ind.best_demand %}
+          <a class="btn small {{ '' if ind.status == 'qualified' else 'secondary' }}"
+             href="{{ url_for('ag.negotiate', lid=res.lot.listing_id, did=ind.best_demand.demand_id) }}">
+            Connect & Draft →
+          </a>
+          {% else %}
+          <span class="muted">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# INDUSTRY SECTOR REQUIREMENTS BOARD #}
+<h2>Industry Procurement Standards (Derived from Stored Buyer Demands)</h2>
+<p class="muted small">Actual specifications requested by registered buyers on HaldiSetu (not arbitrary assumptions).</p>
+
+<div class="grid cols-4" style="margin-bottom:20px">
+  {% for s in ind_stats %}
+  <div class="card" style="padding:16px">
+    <div class="row-actions" style="justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:1.4rem">{{ s.icon }}</span>
+      <span class="badge {{ s.confidence.badge_class }}">{{ s.confidence.badge }}</span>
+    </div>
+    <h3 style="margin:0 0 4px;font-size:1.05rem">{{ s.short_name }}</h3>
+    <div style="font-size:1.2rem;font-weight:700;margin-bottom:8px">
+      {% if s.avg_price %}
+      ₹{{ '{:,.0f}'.format(s.avg_price) }}/q
+      <span class="small muted" style="font-weight:normal">avg</span>
+      {% else %}
+      <span class="muted" style="font-size:.9rem;font-weight:normal">No offers</span>
+      {% endif %}
+    </div>
+
+    {% if s.spread_vs_mandi %}
+    <div class="small" style="margin-bottom:10px">
+      <span class="badge {{ s.spread_vs_mandi.css_class }}">{{ s.spread_vs_mandi.label }}</span>
+    </div>
+    {% endif %}
+
+    <div class="small muted" style="line-height:1.4;border-top:1px solid #eee;padding-top:8px">
+      <div><strong>Curcumin:</strong> {{ ('≥ ' + s.requirements.curcumin_min_typical|string + '%') if s.requirements.curcumin_min_typical is not none else 'Any' }}</div>
+      <div><strong>Moisture:</strong> {{ ('≤ ' + s.requirements.moisture_max_typical|string + '%') if s.requirements.moisture_max_typical is not none else 'Standard' }}</div>
+      <div><strong>Lab Certificate:</strong> {{ 'Required (' + '{:.0f}'.format(s.requirements.lab_required_pct) + '%)' if s.requirements.lab_required_count else 'Not required' }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<p class="hint">
+  ⓘ <strong>Presentation & Viva Notice:</strong> Mandi prices are updated directly from official AGMARKNET / data.gov.in records.
+  Industry rates reflect open buyer requirements on HaldiSetu; in the demo environment, buyers are labelled test buyers.
+  All channel comparison calculations and unlock paths are 100% deterministic.
+</p>
+{% endblock %}

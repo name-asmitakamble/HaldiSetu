@@ -1,0 +1,9 @@
+<a class="card module" href="{{ url_for('mp.demand_detail', did=d.demand_id) }}">
+  <span class="badge ok">{{ d.industry_type }}</span>
+  {% if d.is_demo %}<span class="badge warn">TEST BUYER — demo data</span>{% endif %}
+  <h3 style="margin-top:8px">{{ d.product_form }} · {{ '%g'|format(d.quantity) }} {{ d.quantity_unit }}</h3>
+  <p style="margin:.2rem 0">Offers <strong>{{ d.offered_price|inr }}</strong> {{ d.price_unit }}
+    {% if d.min_curcumin is not none %}· curcumin ≥ {{ d.min_curcumin|string }}%{% endif %}
+    {% if d.max_moisture is not none %}· moisture ≤ {{ d.max_moisture|string }}%{% endif %}</p>
+  <p class="small muted" style="margin:.2rem 0">Delivery: {{ d.delivery_location }}{% if d.deliver_by %} by {{ d.deliver_by|dmy }}{% endif %} · {{ d.buyer.name }}</p>
+</a>

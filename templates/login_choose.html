@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<div class="card" style="max-width:520px;margin:0 auto">
+  <h1>Log in</h1>
+  <p class="muted">Choose how you use HaldiSetu.</p>
+  <div class="grid cols-2">
+    <a class="card module" href="{{ url_for('login', role='farmer', next=next or None) }}">
+      <h3>🌾 Farmer login</h3><p class="muted">List your turmeric stock and see buyer demands that match.</p></a>
+    <a class="card module" href="{{ url_for('login', role='buyer', next=next or None) }}">
+      <h3>🏭 Buyer login</h3><p class="muted">Post your turmeric requirement and see farmer lots that match.</p></a>
+    <a class="card module" href="{{ url_for('login', role='admin', next=next or None) }}">
+      <h3>🛠️ Admin login</h3><p class="muted">Verify users, manage prices and schemes.</p></a>
+  </div>
+  <p class="small muted">New here? <a href="{{ url_for('register') }}">Create an account</a></p>
+</div>
+{% endblock %}

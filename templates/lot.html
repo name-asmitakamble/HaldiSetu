@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% from "_checks.html" import checks, badge %}
+{% block title %}Lot #{{ l.listing_id }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('my_listings') }}">← My lots</a></p>
+<div class="row-actions" style="justify-content:space-between;align-items:center">
+  <h1>Lot #{{ l.listing_id }} — {{ l.product_form }}, {{ '%g'|format(l.quantity) }} {{ l.quantity_unit }}</h1>
+  <div class="row-actions">
+    <a class="btn" href="{{ url_for('ag.where_to_sell', lid=l.listing_id) }}">🎯 Where should I sell?</a>
+    <a class="btn secondary" href="{{ url_for('mp.lot_quality', lid=l.listing_id) }}">Edit quality card</a>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Quality card <span class="small muted">(declared by you — not a lab test)</span></h2>
+  {% if l.quality %}
+  <div class="table-wrap"><table>
+    <tr><th>Variety</th><td>{{ l.quality.variety or '—' }}</td><th>Moisture</th><td>{{ (l.quality.moisture_pct|string + '%') if l.quality.moisture_pct is not none else 'not declared' }}</td></tr>
+    <tr><th>Curcumin</th><td>{{ (l.quality.curcumin_pct|string + '%') if l.quality.curcumin_pct is not none else 'not tested' }}</td>
+      <th>Lab report</th><td>{{ l.quality.lab_report_ref if l.quality.has_lab_report else 'none' }}</td></tr>
+  </table></div>
+  {% else %}<div class="notice warn">No quality card yet. <a href="{{ url_for('mp.lot_quality', lid=l.listing_id) }}">Add one</a> to match industry buyers.</div>{% endif %}
+</div>
+
+<h2 style="margin-top:22px">Price for your lot</h2>
+{% if price.base %}
+  {% if price.base.is_sample %}<div class="notice err"><strong>SAMPLE DATA</strong> — the mandi numbers below come from invented demo rows, not real prices.</div>{% endif %}
+  {% if price.base.stale %}<div class="notice warn"><strong>Historical data.</strong> Newest mandi record is {{ price.base.age }} days old ({{ price.base.latest|dmy }}).</div>{% endif %}
+  <div class="grid cols-4">
+    <div class="card"><div class="small muted">Mandi baseline (median modal)</div><div class="stat">{{ price.base.modal|inr }}</div>
+      <div class="small muted">per quintal · {{ price.base.latest|dmy }} · {{ price.base.markets|join(', ') }} ({{ price.base.scope }})</div></div>
+    <div class="card"><div class="small muted">Adjusted estimate for your lot</div><div class="stat">{{ price.estimate|inr }}</div>
+      <div class="small muted">built from the data above — see notes below</div></div>
+    <div class="card"><div class="small muted">Best direct offer on HaldiSetu</div><div class="stat">{{ price.best_offer|inr }}</div>
+      <div class="small muted">{% if price.offers %}{{ price.offers[0].demand.industry_type }}{% if price.offers[0].demand.is_demo %} (test buyer){% endif %}{% else %}no buyer demand fits this lot yet{% endif %}</div></div>
+    <div class="card"><div class="small muted">Difference: best offer − mandi</div>
+      <div class="stat">{% if price.gap is not none %}{{ '+' if price.gap >= 0 }}{{ price.gap|inr }}{% else %}—{% endif %}</div>
+      <div class="small muted">offers are what buyers state on HaldiSetu, not official prices</div></div>
+  </div>
+  <ul class="small muted" style="margin-top:10px">{% for n in price.notes %}<li>{{ n }}</li>{% endfor %}
+    <li>Source: {{ price.base.sources|join('; ') }}</li></ul>
+  {% if price.floor %}
+  <div class="notice info"><strong>Negotiation floor: {{ price.floor|inr }}/q</strong> — the median of the minimum prices reported by the mandi.
+    {% if price.best_offer and price.best_offer < price.floor %}All current offers are <strong>below</strong> this floor; compare more buyers before accepting.
+    {% elif price.best_offer %}The best offer is above the floor; a counter-offer between the offer and your estimate is reasonable.{% endif %}
+    You decide — HaldiSetu never sends an offer for you.</div>{% endif %}
+  {% if price.offers %}
+  <div class="table-wrap"><table><tr><th>Industry</th><th>Buyer</th><th class="num">Offer ₹/q</th><th>Covers your quantity?</th></tr>
+    {% for o in price.offers %}<tr><td>{{ o.demand.industry_type }}</td><td>{{ o.demand.buyer.name }}{% if o.demand.is_demo %} <span class="badge warn">test</span>{% endif %}</td>
+      <td class="num">{{ o.offer_q|inr }}</td><td>{{ 'Yes' if o.covers_qty else 'No — group lots needed' }}</td></tr>{% endfor %}</table></div>{% endif %}
+{% else %}<div class="notice warn">{{ price.notes[0] }}</div>{% endif %}
+
+<h2 style="margin-top:22px">Sell-when planner</h2>
+{% if sw %}
+  <div class="card">
+    <div class="chart-box" style="height:240px"><canvas id="swChart" aria-label="Recent modal price trend" role="img"></canvas></div>
+    <p>Over the last {{ sw.n_days }} days of data the average modal price moved from {{ sw.first|inr }} to {{ sw.last|inr }}; the fitted trend is
+      <strong>{{ '+' if sw.slope >= 0 }}{{ '%.0f'|format(sw.slope) }} ₹/q per day</strong> (fit R² {{ '%.2f'|format(sw.r2) }}, day-to-day spread ₹{{ '%.0f'|format(sw.volatility) }}).</p>
+    <form method="get" class="row-actions"><label for="sc" style="margin:0">Your storage cost (₹/quintal for 30 days)</label>
+      <input id="sc" name="storage_cost" type="number" step="any" min="0" style="max-width:160px" value="{{ storage if storage is not none else '' }}">
+      <button class="btn small" type="submit">Check</button></form>
+    {% if sw.verdict %}<div class="notice info" style="margin-top:10px">{{ sw.verdict }}</div>{% endif %}
+    <p class="hint">This extends the recent trend; it is <strong>not a price forecast</strong>. Prices can move either way.{% if sw.is_sample %} Based on SAMPLE data.{% endif %}</p>
+  </div>
+{% else %}<div class="notice warn">Not enough mandi history (needs at least 5 days of records) for a trend.</div>{% endif %}
+
+<h2 style="margin-top:22px">Matching buyers ({{ ranked|length }})</h2>
+{% for r in ranked %}
+<div class="card" style="margin-top:12px">
+  <div class="row-actions" style="justify-content:space-between">
+    <h3 style="margin:0"><a href="{{ url_for('mp.demand_detail', did=r.demand.demand_id) }}">{{ r.demand.industry_type }} — {{ '%g'|format(r.demand.quantity) }} {{ r.demand.quantity_unit }} {{ r.demand.product_form }}</a>
+      {% if r.demand.is_demo %}<span class="badge warn">TEST BUYER</span>{% endif %}</h3>{{ badge(r.eval) }}</div>
+  <p>{{ r.eval.explanation }}</p>{{ checks(r.eval) }}
+  <p><a class="btn small" href="{{ url_for('ag.negotiate', lid=l.listing_id, did=r.demand.demand_id) }}">Negotiation helper — draft my offer</a></p>
+</div>
+{% else %}<p class="muted">No open buyer demands yet.</p>{% endfor %}
+{% endblock %}
+{% block scripts %}
+{% if sw %}
+<script src="{{ url_for('static', filename='js/chart.umd.js') }}"></script>
+<script>
+(function () { if (typeof Chart === 'undefined') return;
+  var d = {{ {'labels': sw.labels, 'datasets': [{'label': 'Average modal price (₹/q)', 'data': sw['values'], 'borderColor': '#1b4d3e', 'backgroundColor': '#1b4d3e', 'tension': 0.25, 'pointRadius': 2}]}|tojson }};
+  new Chart(document.getElementById('swChart'), {type: 'line', data: d, options: {responsive: true, maintainAspectRatio: false}});
+})();
+</script>{% endif %}
+{% endblock %}

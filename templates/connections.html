@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Connections{% endblock %}
+{% block content %}
+<h1>My connections</h1>
+<p class="muted small">Contact details appear here only after the farmer has confirmed a deal, so both sides have agreed.
+  HaldiSetu does not hold payment; settle directly with each other.</p>
+{% for d, p in pairs %}
+<div class="card">
+  <strong>{{ d.bill_no }}</strong> · Lot #{{ d.listing_id }} · {{ '%g'|format(d.quantity_q) }} q @ {{ d.price_per_q|inr }}
+  = <strong>{{ d.total|inr }}</strong>
+  <span class="badge ok">{{ d.status }}</span>
+  <p>{{ 'Buyer' if user.role == 'farmer' else 'Farmer' }}: <strong>{{ p.name }}</strong>
+    — <a href="tel:{{ p.phone }}">{{ p.phone }}</a>{% if p.district %} · {{ p.district }}{% endif %}</p>
+  <a class="btn small secondary" href="{{ url_for('deals.detail', did=d.deal_id) }}">Open deal</a>
+</div>
+{% else %}
+<div class="notice info">No connections yet. When a buyer proposes a deal on your matched lot and the farmer confirms it,
+  you will see each other's contact details here.</div>
+{% endfor %}
+{% endblock %}

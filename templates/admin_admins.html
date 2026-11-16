@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Admins{% endblock %}
+{% block content %}
+<h1>Admin accounts</h1>
+<div class="table-wrap"><table><tr><th>#</th><th>Name</th><th>Mobile</th></tr>
+  {% for a in admins %}<tr><td>{{ a.user_id }}</td><td>{{ a.name }}</td><td>{{ a.phone }}</td></tr>{% endfor %}</table></div>
+<div class="card" style="max-width:520px;margin-top:16px">
+  <h2>Create a new admin</h2>
+  <form method="post" action="" class="form-grid" novalidate>
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div class="full"><label for="name">Full name</label>
+      <input id="name" name="name" value="{{ form.get('name','') }}" required maxlength="100"></div>
+    <div class="full"><label for="phone">Mobile number (this is the admin's login ID)</label>
+      <input id="phone" name="phone" inputmode="numeric" value="{{ form.get('phone','') }}" required maxlength="10" placeholder="10 digits"></div>
+    <div><label for="password">Password</label><input id="password" name="password" type="password" minlength="8" required></div>
+    <div><label for="password2">Repeat password</label><input id="password2" name="password2" type="password" minlength="8" required></div>
+    <div class="full"><button class="btn" type="submit">Create admin</button></div>
+  </form>
+</div>
+{% endblock %}

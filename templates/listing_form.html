@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}New listing{% endblock %}
+{% block content %}
+<h1>Create a turmeric listing</h1>
+<div class="card" id="assistant" style="margin-bottom:14px;background:var(--gold-soft)">
+  <h2 style="margin-bottom:4px">Lot assistant <span class="small muted">— speak or type, in Marathi, Hindi or English</span></h2>
+  <p class="small muted" style="margin:0 0 8px">Example: “५ क्विंटल वाळलेली हळद, सांगली, ओलावा १०, भाव ११५००” or “5 quintal dried turmeric in Sangli at 11500”.
+    The assistant fills the form below; <strong>you check it and press Publish</strong>.</p>
+  <textarea id="assist_text" rows="2" maxlength="500" placeholder="तुमच्या मालाबद्दल लिहा / बोला…"></textarea>
+  <div class="row-actions" style="margin-top:8px">
+    <select id="assist_lang" aria-label="Speech language" style="width:auto"><option value="mr-IN">मराठी</option><option value="hi-IN">हिन्दी</option><option value="en-IN">English</option></select>
+    <button class="btn secondary small" type="button" id="assist_mic">🎤 Speak</button>
+    <button class="btn small" type="button" id="assist_go">Fill the form</button>
+    <span class="small muted" id="assist_status"></span></div>
+  <div id="assist_out" class="small" style="margin-top:8px"></div>
+</div>
+<form method="post" class="card form-grid" id="lotform">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div><label for="product_form">Product form</label>
+    <select id="product_form" name="product_form" required>
+      {% for p in forms %}<option {{ 'selected' if form.get('product_form') == p }}>{{ p }}</option>{% endfor %}</select></div>
+  <div><label for="quantity">Available quantity</label>
+    <input id="quantity" name="quantity" type="number" step="any" min="0.01" required value="{{ form.get('quantity','') }}"></div>
+  <div><label for="quantity_unit">Quantity unit</label>
+    <select id="quantity_unit" name="quantity_unit">{% for u in qty_units %}<option {{ 'selected' if form.get('quantity_unit') == u }}>{{ u }}</option>{% endfor %}</select></div>
+  <div><label for="expected_price">Expected price (₹)</label>
+    <input id="expected_price" name="expected_price" type="number" step="any" min="0.01" required value="{{ form.get('expected_price','') }}"></div>
+  <div><label for="price_unit">Price unit</label>
+    <select id="price_unit" name="price_unit">{% for u in price_units %}<option {{ 'selected' if form.get('price_unit') == u }}>{{ u }}</option>{% endfor %}</select></div>
+  <div><label for="location">Location (village / district)</label>
+    <input id="location" name="location" required maxlength="120" value="{{ form.get('location','') }}"></div>
+  <div><label for="availability_date">Available from (optional)</label>
+    <input id="availability_date" name="availability_date" type="date" value="{{ form.get('availability_date','') }}"></div>
+  <div class="full"><label for="quality_details">Quality / grade details (optional)</label>
+    <input id="quality_details" name="quality_details" maxlength="300" value="{{ form.get('quality_details','') }}"
+      placeholder="e.g. well dried, curcumin content if tested, polished / unpolished"></div>
+  {% include "_quality_fields.html" %}
+  <div class="full"><button class="btn" type="submit">Publish listing</button>
+    <a class="btn secondary" href="{{ url_for('listings') }}">Cancel</a></div>
+</form>
+{% endblock %}

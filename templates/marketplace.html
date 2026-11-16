@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Marketplace{% endblock %}
+{% block content %}
+<h1>Farmer ↔ industry marketplace</h1>
+<p class="muted">Buyers post what they need. Farmers keep a quality card for each lot. An AI agent watches every new lot and demand, finds the best matches and tells both sides. Scoring is rule-based, so each result can be checked.</p>
+<div class="notice info small"><strong>Test buyers:</strong> this demo uses clearly marked test buyers. Onboarding real industry buyers is the next phase.
+  HaldiSetu connects users only: it does not handle payment and does not guarantee a sale.</div>
+<div class="grid cols-4" style="margin:16px 0">
+  <div class="card"><div class="stat">{{ n_demands }}</div>open buyer demands</div>
+  <div class="card"><div class="stat">{{ n_lots }}</div>open farmer lots</div>
+  <div class="card"><div class="stat">{{ n_resp }}</div>lots offered to buyers</div>
+  <div class="card"><a class="btn" href="{{ url_for('mp.demands') }}">Browse demands</a>
+    <p style="margin:.6rem 0 0"><a class="btn secondary small" href="{{ url_for('listings') }}">Browse lots</a></p></div>
+</div>
+<h2>How it replaces the agent's five jobs</h2>
+<div class="table-wrap"><table>
+  <tr><th>Agent's job</th><th>HaldiSetu</th></tr>
+  <tr><td>Finds the buyer</td><td style="white-space:normal">Industry demand posts + ranked matching with reasons</td></tr>
+  <tr><td>Judges quality</td><td style="white-space:normal">Quality card (declared values; lab report raises trust). Not a lab test.</td></tr>
+  <tr><td>Knows the price</td><td style="white-space:normal">Lot price page: mandi baseline, direct offers, difference, negotiation floor, sell-when trend</td></tr>
+  <tr><td>Takes small quantities</td><td style="white-space:normal">Group-lot suggestion when several small lots can cover one demand</td></tr>
+  <tr><td>Pays quickly</td><td style="white-space:normal">Deal + bill + payment reference tracking. Payment itself happens directly between the two parties.</td></tr>
+</table></div>
+<h2 style="margin-top:22px">Latest demands</h2>
+<div class="grid cols-2">
+  {% for d in demands %}{% include "_demand_card.html" %}{% else %}<p class="muted">No open demands yet.</p>{% endfor %}
+</div>
+<p class="row-actions" style="margin-top:14px">{% if user and user.role in ('farmer', 'buyer') %}<a class="btn" href="{{ url_for('mp.matches') }}">My AI matches</a>{% endif %}<a class="btn secondary" href="{{ url_for('mp.tool_fresh_dried') }}">Fresh vs dried calculator</a></p>
+{% endblock %}

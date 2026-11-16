@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Buyer dashboard{% endblock %}
+{% block content %}
+<h1>Welcome, {{ user.name }}</h1><p class="muted">Buyer dashboard</p>
+{% if proof != 'approved' %}<div class="notice warn">Your account is <strong>{{ proof }}</strong>. <a href="{{ url_for('dash.verification') }}">Upload your business licence</a> to post demands.</div>{% endif %}
+<div class="grid cols-4">
+  <a class="card module" href="{{ url_for('mp.my_demands') }}"><div class="tag">My demands</div><div class="stat">{{ demands|length }}</div><div class="small muted">{{ new_resp }} new lot offer(s)</div></a>
+  <a class="card module" href="{{ url_for('deals.listing') }}"><div class="tag">Deals</div><div class="stat">{{ deals|length }}</div><div class="small muted">active deal(s)</div></a>
+  <a class="card module" href="{{ url_for('listings') }}"><div class="tag">Farmer lots</div><p class="muted">Browse open lots and send enquiries.</p></a>
+  <a class="card module" href="{{ url_for('market') }}"><div class="tag">Prices</div><p class="muted">Mandi prices and what other industries offer.</p></a>
+</div>
+<div class="row-actions" style="margin:16px 0"><a class="btn" href="{{ url_for('mp.demand_new') }}">+ Post a demand</a><a class="btn secondary" href="{{ url_for('my_enquiries') }}">My enquiries</a></div>
+<h2>What industries are offering on HaldiSetu</h2>
+<div class="table-wrap"><table><tr><th>Industry</th><th class="num">Open demands</th><th class="num">Lowest</th><th class="num">Average</th><th class="num">Highest</th></tr>
+  {% for r in board %}<tr><td>{{ r.industry }}</td><td class="num">{{ r.n }}</td><td class="num">{{ r.min|inr }}</td><td class="num">{{ r.avg|inr }}</td><td class="num">{{ r.max|inr }}</td></tr>{% endfor %}</table></div>
+<p class="hint">Offered prices per quintal posted by buyers on HaldiSetu (not official market prices).</p>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Admin dashboard{% endblock %}
+{% block content %}
+<h1>Admin dashboard</h1>
+<div class="grid cols-4">
+  <a class="card module" href="{{ url_for('dash.admin_verifications') }}"><div class="tag">Verification</div><div class="stat">{{ pending }}</div><div class="small muted">proofs waiting for review</div></a>
+  <a class="card module" href="{{ url_for('dash.admin_users') }}"><div class="tag">Users</div>
+    <div class="stat">{{ users.values()|sum }}</div><div class="small muted">{% for r, n in users.items() %}{{ n }} {{ r }}{{ ', ' if not loop.last }}{% endfor %}</div></a>
+  <a class="card module" href="{{ url_for('deals.listing') }}"><div class="tag">Deals</div>
+    <div class="stat">{{ deals.values()|sum }}</div><div class="small muted">{% for r, n in deals.items() %}{{ n }} {{ r }}{{ ', ' if not loop.last }}{% endfor %}</div></a>
+  <a class="card module" href="{{ url_for('dash.admin_admins') }}"><div class="tag">Admins</div><p class="muted">Create a new admin account.</p></a>
+  <a class="card module" href="{{ url_for('dash.admin_schemes') }}"><div class="tag">Schemes</div><p class="muted">Edit scheme data, languages, verification dates.</p></a>
+</div>
+<div class="card" style="margin-top:16px"><h2>Market data</h2>
+  <p>{{ n_prices }} price records · newest {{ latest|dmy }}.
+    {% if last_sync %}Last sync {{ last_sync.created_at.strftime('%d %b %Y %H:%M') }} UTC: {{ last_sync.detail }}{% else %}Never synced from data.gov.in.{% endif %}</p>
+  <div class="row-actions">
+    <form method="post" action="{{ url_for('dash.admin_sync') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="btn" type="submit">Sync from data.gov.in now</button></form>
+    <a class="btn secondary" href="{{ url_for('admin') }}">CSV import &amp; prediction log</a></div>
+  <p class="hint">Needs DATA_GOV_API_KEY in .env. Lots: {{ n_lots }} · Demands: {{ n_demands }}.</p></div>
+<h2 style="margin-top:20px">Recent activity <a class="small" href="{{ url_for('dash.admin_audit') }}">(full audit log)</a></h2>
+<div class="table-wrap"><table><tr><th>When (UTC)</th><th>Who</th><th>Action</th><th>Detail</th></tr>
+  {% for l in logs %}<tr><td>{{ l.created_at.strftime('%d %b %H:%M') }}</td><td>{{ l.actor.name if l.actor else 'system' }}</td><td>{{ l.action }}</td><td style="white-space:normal">{{ l.detail or '' }}</td></tr>
+  {% else %}<tr><td colspan="4" class="muted">No activity yet.</td></tr>{% endfor %}</table></div>
+{% endblock %}

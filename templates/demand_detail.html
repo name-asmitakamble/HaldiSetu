@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "_checks.html" import checks, badge %}
+{% block title %}Demand #{{ d.demand_id }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('mp.demands') }}">← All demands</a></p>
+<div class="card">
+  <span class="badge ok">{{ d.industry_type }}</span>
+  {% if d.is_demo %}<span class="badge warn">TEST BUYER — demo data, not a real company</span>{% endif %}
+  <span class="badge {{ 'ok' if d.status == 'open' else 'grey' }}">{{ d.status }}</span>
+  <h1 style="margin-top:8px">{{ '%g'|format(d.quantity) }} {{ d.quantity_unit }} · {{ d.product_form }}</h1>
+  <div class="table-wrap"><table>
+    <tr><th>Offered price</th><td>{{ d.offered_price|inr }} {{ d.price_unit }}</td></tr>
+    <tr><th>Minimum curcumin</th><td>{{ (d.min_curcumin|string + '%') if d.min_curcumin is not none else 'No requirement' }}</td></tr>
+    <tr><th>Maximum moisture</th><td>{{ (d.max_moisture|string + '%') if d.max_moisture is not none else 'No requirement' }}</td></tr>
+    <tr><th>Lab report</th><td>{{ 'Required' if d.requires_lab_report else 'Not required' }}</td></tr>
+    <tr><th>Delivery</th><td>{{ d.delivery_location }}{% if d.deliver_by %} by {{ d.deliver_by|dmy }}{% endif %}</td></tr>
+    <tr><th>Buyer</th><td>{{ d.buyer.name }}</td></tr>
+    {% if d.notes %}<tr><th>Notes</th><td style="white-space:normal">{{ d.notes }}</td></tr>{% endif %}
+  </table></div>
+</div>
+
+{% if group %}
+<div class="notice info" style="margin-top:14px"><strong>Group lots can cover this demand.</strong>
+  {% for l in group.lots %}Lot #{{ l.listing_id }} ({{ '%g'|format(l.quantity) }} {{ l.quantity_unit }}, {{ l.location }}, {{ l.farmer.name }}){{ ' + ' if not loop.last }}{% endfor %}
+  = {{ '%g'|format(group.total_q) }} q ≥ {{ '%g'|format(group.need_q) }} q needed. These farmers would have to agree to combine — HaldiSetu only suggests it.</div>
+{% endif %}
+
+{% if ranked is not none %}
+  <h2 style="margin-top:22px">Your lots against this demand</h2>
+  {% for r in ranked %}
+  <div class="card" style="margin-top:12px">
+    <div class="row-actions" style="justify-content:space-between">
+      <h3 style="margin:0">Lot #{{ r.lot.listing_id }} — {{ r.lot.product_form }}, {{ '%g'|format(r.lot.quantity) }} {{ r.lot.quantity_unit }}</h3>{{ badge(r.eval) }}</div>
+    <p>{{ r.eval.explanation }}</p>{{ checks(r.eval) }}
+    {% if r.lot.listing_id in responded %}<span class="badge ok">Already offered to this buyer</span>
+    {% elif d.status == 'open' %}
+    <form method="post" action="{{ url_for('mp.respond', did=d.demand_id) }}" class="form-grid">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="listing_id" value="{{ r.lot.listing_id }}">
+      <div><label>Your asking price ₹/quintal (optional)</label><input name="ask_price" type="number" step="any" min="0.01"></div>
+      <div><label>Message (optional)</label><input name="message" maxlength="300"></div>
+      <div class="full"><button class="btn small" type="submit">Offer this lot to the buyer</button></div>
+    </form>{% endif %}
+  </div>
+  {% else %}<p class="muted">You have no open lots. <a href="{{ url_for('listing_new') }}">Create a lot</a> with a quality card.</p>{% endfor %}
+{% elif user and user.role == 'farmer' %}{% endif %}
+
+{% if responses is not none %}
+  <h2 style="margin-top:22px">Lots offered to you ({{ responses|length }})</h2>
+  {% for r, ev in responses %}
+  <div class="card" style="margin-top:12px">
+    <div class="row-actions" style="justify-content:space-between">
+      <h3 style="margin:0">Lot #{{ r.listing_id }} — {{ r.listing.product_form }}, {{ '%g'|format(r.listing.quantity) }} {{ r.listing.quantity_unit }} · {{ r.farmer.name }}</h3>
+      <span>{{ badge(ev) }} <span class="badge grey">{{ r.status }}</span></span></div>
+    <p class="small muted">{{ r.listing.location }} · asking {{ (r.ask_price|inr ~ '/q') if r.ask_price else 'not stated' }}{% if r.message %} · “{{ r.message }}”{% endif %}</p>
+    <p>{{ ev.explanation }}</p>{{ checks(ev) }}
+    <div class="row-actions">
+      {% for st, label in [('shortlisted','Shortlist'),('declined','Decline')] %}
+      <form method="post" action="{{ url_for('mp.response_status', rid=r.response_id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="status" value="{{ st }}"><button class="btn secondary small" type="submit">{{ label }}</button></form>{% endfor %}
+    </div>
+    {% if r.deal %}<p><a href="{{ url_for('deals.detail', did=r.deal.deal_id) }}">View deal {{ r.deal.bill_no }} ({{ r.deal.status }})</a></p>
+    {% elif r.status != 'declined' and d.status == 'open' %}
+    <form method="post" action="{{ url_for('deals.propose', rid=r.response_id) }}" class="form-grid" style="margin-top:8px">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <div><label>Quantity (quintal)</label><input name="quantity_q" type="number" step="any" min="0.01" required value="{{ '%g'|format([qty_q(r.listing.quantity, r.listing.quantity_unit), qty_q(d.quantity, d.quantity_unit)]|min) }}"></div>
+      <div><label>Agreed price (₹/quintal)</label><input name="price_per_q" type="number" step="any" min="0.01" required value="{{ r.ask_price|int if r.ask_price else d.offered_price|int }}"></div>
+      <div class="full"><button class="btn small" type="submit">Propose deal</button>
+        <span class="hint">The farmer must confirm before contact details are shared.</span></div>
+    </form>{% endif %}
+  </div>
+  {% else %}<p class="muted">No lots offered yet.</p>{% endfor %}
+{% endif %}
+
+{% if not user %}<div class="notice info"><a href="{{ url_for('login', next=request.path) }}">Log in</a> as a farmer to see how your lots match this demand.</div>{% endif %}
+{% endblock %}

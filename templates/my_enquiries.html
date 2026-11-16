@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Enquiries{% endblock %}
+{% block content %}
+<h1>{{ 'Enquiries received' if user.role == 'farmer' else 'My enquiries' }}</h1>
+<div class="table-wrap"><table>
+  <tr><th>Date</th><th>Listing</th>
+    {% if user.role == 'farmer' %}<th>Buyer</th><th>Buyer mobile</th>{% endif %}
+    <th>Message</th><th>Status</th>{% if user.role == 'farmer' %}<th></th>{% endif %}</tr>
+  {% for e in rows %}
+  <tr><td>{{ e.created_at|dmy }}</td>
+    <td><a href="{{ url_for('listing_detail', lid=e.listing_id) }}">#{{ e.listing_id }} {{ e.listing.product_form }}</a></td>
+    {% if user.role == 'farmer' %}<td>{{ e.buyer.name }}</td><td>{{ e.buyer.phone }}</td>{% endif %}
+    <td style="white-space:normal;min-width:220px">{{ e.enquiry_message }}</td>
+    <td><span class="badge {{ 'warn' if e.enquiry_status == 'new' else ('ok' if e.enquiry_status == 'contacted' else 'grey') }}">{{ e.enquiry_status }}</span></td>
+    {% if user.role == 'farmer' %}<td><form method="post" action="{{ url_for('enquiry_status', eid=e.enquiry_id) }}" class="row-actions">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <select name="status" aria-label="Change status" style="width:auto">
+        {% for s in ['new','contacted','closed'] %}<option {{ 'selected' if e.enquiry_status == s }}>{{ s }}</option>{% endfor %}</select>
+      <button class="btn secondary small" type="submit">Update</button></form></td>{% endif %}</tr>
+  {% else %}<tr><td colspan="7" class="muted">No enquiries yet.</td></tr>{% endfor %}
+</table></div>
+<p class="hint">Contact the other party directly by phone. HaldiSetu records enquiries only — it does not confirm any sale.</p>
+{% endblock %}

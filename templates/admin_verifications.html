@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Verifications{% endblock %}
+{% block content %}
+<h1>Proof review</h1>
+<p class="muted small">Open the file, compare it with the official record, then approve or reject. Nothing is verified automatically.</p>
+<div class="table-wrap"><table><tr><th>Date</th><th>User</th><th>Role</th><th>Document</th><th>File</th><th>Proof agent (advisory)</th><th>Status</th><th>Decision</th></tr>
+  {% for p in rows %}<tr><td>{{ p.created_at|dmy }}</td><td>{{ p.user.name }}<br><span class="small muted">{{ p.user.phone }}</span></td><td>{{ p.user.role }}</td><td>{{ p.doc_type }}</td>
+    <td>{% if p.filename %}<a href="{{ url_for('dash.admin_proof_file', pid=p.proof_id) }}">Download</a>{% else %}demo account{% endif %}</td>
+    <td class="small" style="white-space:normal;min-width:230px">{% if p.analysis %}<span class="badge grey">{{ p.analysis.mode }} mode</span>
+      {% if p.analysis.extracted_name %}<br>Name read: {{ p.analysis.extracted_name }}{% endif %}{% if p.analysis.extracted_type %} · type: {{ p.analysis.extracted_type }}{% endif %}
+      {% for fl in p.analysis.flag_list %}<br>⚠ {{ fl }}{% endfor %}{% else %}—{% endif %}</td>
+    <td><span class="badge {{ 'ok' if p.status == 'approved' else ('err' if p.status == 'rejected' else 'warn') }}">{{ p.status }}</span></td>
+    <td><form method="post" action="{{ url_for('dash.admin_review', pid=p.proof_id) }}" class="row-actions"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <input name="admin_note" placeholder="note (optional)" maxlength="200" style="width:150px">
+      <button class="btn small" name="decision" value="approved" type="submit">Approve</button>
+      <button class="btn secondary small" name="decision" value="rejected" type="submit">Reject</button></form></td></tr>
+  {% else %}<tr><td colspan="8" class="muted">No proofs uploaded yet.</td></tr>{% endfor %}</table></div>
+{% endblock %}

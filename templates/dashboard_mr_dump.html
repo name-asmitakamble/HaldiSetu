@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="mr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>शेतकरी डॅशबोर्ड · HaldiSetu</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="/">Haldi<span>Setu</span></a>
+    <nav aria-label="Main">
+      <a href="/detect" class="">
+        रोग तपासणी
+      </a>
+      <a href="/schemes" class="">
+        शासकीय योजना
+      </a>
+      <a href="/marketplace" class="">
+        बाजारपेठ
+      </a>
+      <a href="/market" class="">
+        बाजार भाव
+      </a>
+      
+        <a href="/dashboard" class="active">
+          डॅशबोर्ड
+        </a>
+        <form method="post" action="/logout" style="display:inline">
+          <input type="hidden" name="_csrf" value="0bf31d7e46a8b63da44af7ea52c34b5c">
+          <button class="linklike" type="submit">
+            लॉगआउट (Demo)
+          </button>
+        </form>
+      
+
+      <span class="lang-nav" style="display:inline-flex;gap:4px;margin-left:8px;vertical-align:middle" title="Select Website Language">
+        <a href="/set-language/en?next=/dashboard" class="badge grey" style="font-size:.7rem;padding:2px 7px">EN</a>
+        <a href="/set-language/mr?next=/dashboard" class="badge ok" style="font-size:.7rem;padding:2px 7px">मराठी</a>
+        <a href="/set-language/hi?next=/dashboard" class="badge grey" style="font-size:.7rem;padding:2px 7px">हिंदी</a>
+      </span>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  
+    
+  
+  
+
+<div class="row-actions" style="justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+  <div>
+    <h1 style="margin:0">
+      नमस्कार, Demo Farmer – Ravi Patil
+      
+    </h1>
+    <p class="muted" style="margin:.2rem 0 0">
+      शेतकरी डॅशबोर्ड
+      
+    </p>
+  </div>
+
+  <div class="card" style="padding:8px 16px;display:flex;align-items:center;gap:10px;margin:0;background:#f9fcf9;border:2px solid var(--green)">
+    <span style="font-weight:700;font-size:.9rem;color:var(--green)">🌐 भाषा / Language:</span>
+    <a class="badge grey" style="cursor:pointer;font-size:.85rem;padding:4px 12px;text-decoration:none" href="/set-language/en?next=/dashboard">English</a>
+    <a class="badge ok" style="cursor:pointer;font-size:.85rem;padding:4px 12px;text-decoration:none" href="/set-language/mr?next=/dashboard">मराठी</a>
+    <a class="badge grey" style="cursor:pointer;font-size:.85rem;padding:4px 12px;text-decoration:none" href="/set-language/hi?next=/dashboard">हिंदी</a>
+  </div>
+</div>
+
+
+
+
+
+
+<div class="card" style="margin-bottom:14px">
+  <strong>आजचा बाजार सारांश</strong>
+  <p style="margin:.3rem 0 0">30 Oct 2026 रोजी 12 बाजारांनी हळदीचे भाव नोंदवले. सरासरी मोडल भाव ₹13,208/क्विंटल; सर्वाधिक Jowai (₹16,000), सर्वात कमी Nizamabad (₹12,200). सरासरी 29 Oct पेक्षा ₹1,011 जास्त आहे. स्रोत: Agmarknet via data.gov.in API (synced 03 Nov 2026 15:30); Agmarknet via data.gov.in API (synced 03 Nov 2026 15:35).</p>
+</div>
+
+
+<div class="grid cols-4">
+  <a class="card module" href="/schemes">
+    <div class="tag">
+      विभाग १ · शासकीय योजना
+    </div>
+    
+    <p class="muted">
+      आपल्या शेतीची माहिती भरा आणि योजना शिफारस मिळवा.
+    </p>
+    
+  </a>
+
+  <a class="card module" href="/my/listings">
+    <div class="tag">
+      विभाग २ · बाजारपेठ
+    </div>
+    <div class="stat">3</div>
+    <div class="small muted">
+      नोंदवलेला माल · 1 खरेदीदार जुळणी
+      
+    </div>
+  </a>
+
+  <a class="card module" href="/market">
+    <div class="tag">
+      विभाग ३ · बाजार भाव
+    </div>
+    
+    <div class="stat">₹12,300</div>
+    <div class="small muted">
+      बाजार समिती सरासरी/क्विंटल · 30 Oct 2026
+      
+    </div>
+    
+  </a>
+
+  <a class="card module" href="/deals">
+    <div class="tag">
+      सुरू सौदे
+    </div>
+    <div class="stat">0</div>
+    <div class="small muted">
+      सक्रिय व्यवहार
+      
+    </div>
+  </a>
+</div>
+
+
+<div class="notice good" style="margin-top:14px">
+  
+  तुमच्या हळदीसाठी सध्याची सर्वोत्तम थेट ऑफर: <strong>₹13,200/क्विंटल</strong> (बाजार समिती सरासरी ₹12,300) — हळदीसेतूवर नोंदवलेले दर.
+  
+</div>
+
+
+<div class="row-actions" style="margin:16px 0;flex-wrap:wrap;gap:8px">
+  <a class="btn" href="/listings/new">
+    + नवीन माल नोंदवा (बोला किंवा लिहा)
+  </a>
+  <a class="btn" href="/where-to-sell" style="background:var(--green)">
+    🎯 मी कुठे विक्री करावी?
+  </a>
+  <a class="btn secondary" href="/demands">
+    खरेदीदारांच्या मागण्या पहा
+  </a>
+  <a class="btn secondary" href="/my/enquiries">
+    चौकशी संदेश
+  </a>
+  <a class="btn secondary" href="/tools/fresh-vs-dried">
+    ओली वि. वाळलेली हळद
+  </a>
+  <a class="btn secondary" href="/detect">
+    पानांची तपासणी
+  </a>
+</div>
+
+
+
+
+
+</main>
+<footer>
+  <div class="wrap">
+    
+    हळदीसेतू शेतकऱ्यांच्या निर्णय प्रक्रियेस मदत करते. हे कृषी तज्ज्ञ, शासकीय अधिकारी किंवा प्रत्यक्ष खरेदीदार-विक्रेता कराराची जागा घेत नाही.
+    
+  </div>
+</footer>
+
+
+
+<script>
+(function() {
+  var lang = "mr";
+  if (!lang || lang === 'en') return;
+
+  var DICT = {
+    mr: {
+      "Disease check": "रोग तपासणी",
+      "Schemes": "शासकीय योजना",
+      "Marketplace": "बाजारपेठ",
+      "Market prices": "बाजार भाव",
+      "Dashboard": "डॅशबोर्ड",
+      "Logout": "लॉगआउट",
+      "Login": "लॉगिन",
+      "Register": "नोंदणी",
+      "Farmer dashboard": "शेतकरी डॅशबोर्ड",
+      "Buyer dashboard": "खरेदीदार डॅशबोर्ड",
+      "Admin dashboard": "प्रशासक डॅशबोर्ड",
+      "Price alerts": "भाव सूचना (अलर्ट)",
+      "Mark as read": "वाचले म्हणून खूण करा",
+      "Today's market summary": "आजचा बाजार सारांश",
+      "Where should I sell?": "मी कुठे विक्री करावी? (सल्लागार)",
+      "Where Should I Sell?": "मी कुठे विक्री करावी?",
+      "Sell-Channel Advisor": "विक्री-मार्ग सल्लागार",
+      "Recommended Route": "शिफारस केलेला मार्ग",
+      "Expected Price": "अपेक्षित भाव",
+      "Channel-by-Channel Comparison": "सर्व विक्री मार्गांची तुलना",
+      "Connect & Draft Offer": "खरेदीदाराशी संपर्क साधा व ऑफर पाठवा",
+      "Connect & Draft Offer →": "खरेदीदाराशी संपर्क साधा व ऑफर पाठवा →",
+      "Browse buyer demands": "खरेदीदारांच्या मागण्या पहा",
+      "Enquiries": "चौकशी संदेश",
+      "Fresh vs dried": "ओली वि. वाळलेली हळद",
+      "Leaf check": "पानांची तपासणी (रोग शोध)",
+      "Your action calendar": "तुमची कृती दिनदर्शिका",
+      "Active deals": "सुरू सौदे व बिले",
+      "Bill": "बिल क्र.",
+      "Buyer": "खरेदीदार",
+      "Total": "एकूण रक्कम",
+      "Status": "स्थिती",
+      "State": "राज्य",
+      "District": "जिल्हा",
+      "Market (Mandi)": "बाजार समिती (मंडी)",
+      "Market": "बाजार समिती",
+      "All States": "सर्व राज्ये",
+      "All Districts": "सर्व जिल्हे",
+      "All Markets": "सर्व बाजार समित्या",
+      "All Varieties": "सर्व जाती",
+      "Apply filters": "फिल्टर लावा",
+      "Clear filters": "फिल्टर काढा",
+      "Reported date": "नोंदणी तारीख",
+      "Modal price": "मोडल भाव",
+      "Minimum price": "किमान भाव",
+      "Maximum price": "कमाल भाव",
+      "Industry procurement prices": "उद्योग खरेदी भाव",
+      "View Mandis": "बाजार समित्या पहा",
+      "View Mandi Prices →": "बाजार भाव पहा →",
+      "Edit Quality Card": "गुणवत्ता कार्ड सुधारा",
+      "Edit quality card": "गुणवत्ता कार्ड सुधारा",
+      "Quantity to sell": "विक्रीचे प्रमाण",
+      "Turmeric variety": "हळदीची जात",
+      "Transport cost": "वाहतूक खर्च",
+      "Get recommendation": "शिफारस मिळवा",
+      "Check": "तपासा",
+      "Submit": "सादर करा",
+      "Save": "जतन करा",
+      "Upload": "अपलोड करा",
+      "Download": "डाउनलोड",
+      "Price for your lot": "तुमच्या हळदीचा अपेक्षित भाव",
+      "Sell-when planner": "विक्री वेळ नियोजक",
+      "Matching buyers": "जुळणारे खरेदीदार"
+    },
+    hi: {
+      "Disease check": "रोग जांच",
+      "Schemes": "सरकारी योजनाएं",
+      "Marketplace": "मार्केटप्लेस",
+      "Market prices": "मंडी भाव",
+      "Dashboard": "डैशबोर्ड",
+      "Logout": "लॉगआउट",
+      "Login": "लॉगिन",
+      "Register": "पंजीकरण",
+      "Farmer dashboard": "किसान डैशबोर्ड",
+      "Buyer dashboard": "क्रेता डैशबोर्ड",
+      "Admin dashboard": "प्रशासक डैशबोर्ड",
+      "Price alerts": "मूल्य अलर्ट",
+      "Mark as read": "पढ़ा हुआ चिह्नित करें",
+      "Today's market summary": "आज का मंडी सारांश",
+      "Where should I sell?": "मैं कहाँ बेचूँ? (सलाहकार)",
+      "Where Should I Sell?": "मैं कहाँ बेचूँ?",
+      "Sell-Channel Advisor": "बिक्री चैनल सलाहकार",
+      "Recommended Route": "अनुशंसित विकल्प",
+      "Expected Price": "अपेक्षित भाव",
+      "Channel-by-Channel Comparison": "सभी चैनलों की तुलना",
+      "Connect & Draft Offer": "खरीदार से संपर्क करें व प्रस्ताव भेजें",
+      "Connect & Draft Offer →": "खरीदार से संपर्क करें व प्रस्ताव भेजें →",
+      "Browse buyer demands": "खरीदार मांगें देखें",
+      "Enquiries": "पूछताछ",
+      "Fresh vs dried": "ताजी बनाम सूखी हल्दी",
+      "Leaf check": "पत्ती जांच (रोग पहचान)",
+      "Your action calendar": "आपका कार्य कैलेंडर",
+      "Active deals": "सक्रिय सौदे एवं बिल",
+      "Bill": "बिल सं.",
+      "Buyer": "खरीदार",
+      "Total": "कुल राशि",
+      "Status": "स्थिति",
+      "State": "राज्य",
+      "District": "ज़िला",
+      "Market (Mandi)": "कृषि उपज मंडी",
+      "Market": "मंडी",
+      "All States": "सभी राज्य",
+      "All Districts": "सभी ज़िले",
+      "All Markets": "सभी मंडियां",
+      "All Varieties": "सभी किस्में",
+      "Apply filters": "फ़िल्टर लागू करें",
+      "Clear filters": "फ़िल्टर हटाएं",
+      "Reported date": "रिपोर्ट तिथि",
+      "Modal price": "मॉडल भाव",
+      "Minimum price": "न्यूनतम भाव",
+      "Maximum price": "अधिकतम भाव",
+      "Industry procurement prices": "उद्योग खरीद भाव",
+      "View Mandis": "मंडियां देखें",
+      "View Mandi Prices →": "मंडी भाव देखें →",
+      "Edit Quality Card": "गुणवत्ता कार्ड संपादित करें",
+      "Edit quality card": "गुणवत्ता कार्ड संपादित करें",
+      "Quantity to sell": "बिक्री की मात्रा",
+      "Turmeric variety": "हल्दी की किस्म",
+      "Transport cost": "परिवहन लागत",
+      "Get recommendation": "सिफारिश प्राप्त करें",
+      "Check": "जांचें",
+      "Submit": "जमा करें",
+      "Save": "सहेजें",
+      "Upload": "अपलोड करें",
+      "Download": "डाउनलोड",
+      "Price for your lot": "आपकी फसल का अनुमानित मूल्य",
+      "Sell-when planner": "बिक्री समय नियोजक",
+      "Matching buyers": "अनुकूल खरीदार"
+    }
+  };
+
+  var d = DICT[lang];
+  if (!d) return;
+
+  function translateText(str) {
+    if (!str) return str;
+    var trimmed = str.trim();
+    if (d[trimmed]) {
+      return str.replace(trimmed, d[trimmed]);
+    }
+    return str;
+  }
+
+  function walk(node) {
+    if (node.nodeType === 3) {
+      var val = node.nodeValue;
+      if (val && val.trim().length > 0) {
+        var trans = translateText(val);
+        if (trans !== val) {
+          node.nodeValue = trans;
+        }
+      }
+    } else if (node.nodeType === 1) {
+      if (node.tagName === 'SCRIPT' || node.tagName === 'STYLE' || node.classList.contains('lang-nav')) {
+        return;
+      }
+      if (node.placeholder) {
+        node.placeholder = translateText(node.placeholder);
+      }
+      for (var i = 0; i < node.childNodes.length; i++) {
+        walk(node.childNodes[i]);
+      }
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { walk(document.body); });
+  } else {
+    walk(document.body);
+  }
+})();
+</script>
+</body>
+</html>

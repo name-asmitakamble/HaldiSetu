@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Result{% endblock %}
+{% block content %}
+<h1>Leaf analysis result</h1>
+
+{% if pred.demo %}
+<div class="notice err"><strong>DEMO MODE — this is not a real prediction.</strong> No trained model was loaded
+  (expected <code>ml/haldisetu_model.keras</code>). The result below is a placeholder used only to test the website flow.
+  {% if load_error %}<br><span class="small">Model load error: {{ load_error }}</span>{% endif %}</div>
+{% endif %}
+
+<div class="result-grid">
+  <div>
+    <img class="leaf-img" src="{{ url_for('static', filename='uploads/' ~ image) }}" alt="Uploaded leaf">
+    <p class="small muted">Image is processed in memory and stored with a random name; no personal data is attached.</p>
+  </div>
+  <div class="card">
+    {% if uncertain %}
+      <span class="badge warn">Uncertain prediction</span>
+      <h2 style="margin-top:8px">We can't say reliably</h2>
+      <div class="notice warn">The model's confidence ({{ '%.0f'|format(pred.confidence*100) }}%) is below the
+        {{ '%.0f'|format(threshold*100) }}% reliability threshold, or the image may be unsuitable. Disease-specific
+        treatment is <strong>not</strong> shown. Try a clearer, closer photo of a single leaf in daylight, and consult a
+        local Krishi Vigyan Kendra (KVK) or agriculture officer.</div>
+    {% else %}
+      <span class="badge {{ 'ok' if pred.label == 'Healthy_Leaf' else 'warn' }}">Predicted condition</span>
+      <h2 style="margin-top:8px">{{ name }}</h2>
+    {% endif %}
+
+    <div class="small">Model confidence: <strong>{{ '%.1f'|format(pred.confidence*100) }}%</strong></div>
+    <div class="bar {{ 'low' if uncertain }}" role="img" aria-label="confidence {{ '%.0f'|format(pred.confidence*100) }} percent"><span style="width:{{ '%.0f'|format(pred.confidence*100) }}%"></span></div>
+    <p class="hint">Confidence is the model's own score. A high score does not prove the diagnosis is correct.</p>
+
+    <h3 class="section-title">Other possibilities considered</h3>
+    <div class="table-wrap"><table>
+      <tr><th>Condition</th><th class="num">Score</th></tr>
+      {% for t in pred.top3 %}<tr><td>{{ t.name }}</td><td class="num">{{ '%.1f'|format(t.confidence*100) }}%</td></tr>{% endfor %}
+    </table></div>
+  </div>
+</div>
+
+{% if advisory %}
+<div class="card" style="margin-top:20px">
+  <h2>Advisory: {{ advisory.display_name }}</h2>
+  <h3>Symptoms</h3><p>{{ advisory.symptoms }}</p>
+  <h3>Prevention</h3><p>{{ advisory.prevention_guidance }}</p>
+  <h3>Treatment guidance</h3><p>{{ advisory.treatment_guidance }}</p>
+  <div class="notice info small"><strong>Source:</strong> {{ advisory.source_name }} —
+    <a href="{{ advisory.source_url }}" target="_blank" rel="noopener">official document</a><br>
+    <strong>Last reviewed:</strong>
+    {% if advisory.last_verified_date %}{{ advisory.last_verified_date|dmy }}{% else %}<em>Not yet verified</em>{% endif %}.
+    This is general guidance, not a guaranteed cure. Confirm with a qualified agricultural expert when symptoms are
+    unclear or severe.</div>
+</div>
+{% elif not uncertain %}
+<div class="notice warn">No reviewed advisory is stored for “{{ name }}”. Please consult an agriculture expert.</div>
+{% endif %}
+
+<p style="margin-top:18px" class="row-actions">
+  <a class="btn" href="{{ url_for('detect') }}">Check another leaf</a>
+  <a class="btn secondary" href="{{ url_for('sch.schemes') }}">Find schemes</a>
+  <a class="btn secondary" href="{{ url_for('market') }}">See market prices</a>
+</p>
+{% endblock %}

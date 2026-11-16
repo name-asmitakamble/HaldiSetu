@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Disease check{% endblock %}
+{% block content %}
+<h1>Turmeric leaf disease check</h1>
+<p class="muted">Upload one clear photo of a single turmeric leaf (JPG or PNG, up to 5 MB). Take it in daylight with the leaf
+   filling most of the frame.</p>
+<form method="post" enctype="multipart/form-data" class="upload-box" id="upform">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <label for="leaf_image" style="font-size:1.05rem">Choose or take a leaf photo</label>
+  <input id="leaf_image" name="leaf_image" type="file" accept="image/jpeg,image/png" capture="environment" required
+         style="max-width:420px;margin:8px auto;background:#fff">
+  <img id="preview" alt="Selected leaf preview">
+  <p><button class="btn" type="submit" id="go">Analyse leaf</button></p>
+</form>
+<div class="notice info">The model only knows the leaf conditions it was trained on. A confident result is still a
+  <strong>suggestion, not a diagnosis</strong> — confirm with an agriculture expert before spending on treatment.</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  var inp = document.getElementById('leaf_image'), pv = document.getElementById('preview');
+  inp.addEventListener('change', function () {
+    var f = inp.files[0]; if (!f) return;
+    if (f.size > 5 * 1024 * 1024) { alert('Image is larger than 5 MB. Please choose a smaller one.'); inp.value = ''; pv.style.display = 'none'; return; }
+    pv.src = URL.createObjectURL(f); pv.style.display = 'block';
+  });
+  document.getElementById('upform').addEventListener('submit', function () {
+    var b = document.getElementById('go'); b.disabled = true; b.textContent = 'Analysing…';
+  });
+})();
+</script>
+{% endblock %}

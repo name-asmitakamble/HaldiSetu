@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% macro btn_form(action, label, secondary=False) %}
+<form method="post" action="{{ url_for('deals.action', did=d.deal_id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <input type="hidden" name="action" value="{{ action }}"><button class="btn {{ 'secondary' if secondary }}" type="submit">{{ label }}</button></form>
+{% endmacro %}
+{% block title %}Deal {{ d.bill_no }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('deals.listing') }}">← All deals</a></p>
+<h1>Deal {{ d.bill_no }}</h1>
+{% if d.status == 'cancelled' %}<div class="notice err">This deal was cancelled.</div>
+{% else %}
+<div class="row-actions" style="margin:10px 0">
+  {% for s in steps %}<span class="badge {{ 'ok' if steps.index(s) <= steps.index(d.status) else 'grey' }}">{{ loop.index }}. {{ s }}</span>{% endfor %}</div>{% endif %}
+<div class="card">
+  <div class="table-wrap"><table>
+    <tr><th>Lot</th><td>#{{ d.listing_id }} — {{ d.listing.product_form }}</td></tr>
+    <tr><th>Demand</th><td>{{ d.demand.industry_type }}{% if d.demand.is_demo %} <span class="badge warn">TEST BUYER</span>{% endif %}</td></tr>
+    <tr><th>Quantity</th><td>{{ '%g'|format(d.quantity_q) }} quintal</td></tr>
+    <tr><th>Agreed price</th><td>{{ d.price_per_q|inr }} per quintal</td></tr>
+    <tr><th>Total</th><td><strong>{{ d.total|inr }}</strong></td></tr>
+    <tr><th>Farmer</th><td>{{ d.farmer.name }}{% if reveal %} · 📞 {{ d.farmer.phone }}{% endif %}</td></tr>
+    <tr><th>Buyer</th><td>{{ d.buyer.name }}{% if reveal %} · 📞 {{ d.buyer.phone }}{% endif %}</td></tr>
+    {% if d.payment_ref %}<tr><th>Payment reference</th><td>{{ d.payment_ref }}</td></tr>{% endif %}
+  </table></div>
+  {% if not reveal %}<p class="hint">Contact details are shared after the farmer confirms the deal.</p>{% endif %}
+  <div class="notice info small" style="margin-top:12px">HaldiSetu does <strong>not</strong> handle payment. After delivery the buyer pays the farmer directly
+    (bank transfer/UPI/cheque) and records the reference here; the farmer then confirms receipt.</div>
+
+  <div class="row-actions" style="margin-top:12px">
+    {% set role = user.role %}
+    {% if role == 'farmer' and d.status == 'proposed' %}{{ btn_form('confirm','Confirm deal') }}{% endif %}
+    {% if role == 'farmer' and d.status == 'confirmed' %}{{ btn_form('delivered','Mark delivered') }}{% endif %}
+    {% if role == 'farmer' and d.status == 'paid' %}{{ btn_form('settled','Payment received — settle') }}{% endif %}
+    {% if role in ('farmer','buyer') and d.status in ('proposed','confirmed') %}{{ btn_form('cancel','Cancel deal', True) }}{% endif %}
+    {% if d.status not in ('proposed','cancelled') %}<a class="btn secondary" href="{{ url_for('deals.bill', did=d.deal_id) }}">View / print bill</a>{% endif %}
+  </div>
+  {% if role == 'buyer' and d.status == 'delivered' %}
+  <form method="post" action="{{ url_for('deals.action', did=d.deal_id) }}" class="form-grid" style="margin-top:12px">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="paid">
+    <div><label for="pr">Payment reference (UPI / UTR / cheque no.)</label><input id="pr" name="payment_ref" required minlength="3" maxlength="60"></div>
+    <div class="full"><button class="btn" type="submit">I have paid the farmer</button></div></form>{% endif %}
+</div>
+{% endblock %}

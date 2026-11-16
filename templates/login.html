@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ role_label }} login{% endblock %}
+{% block content %}
+<div class="card" style="max-width:420px;margin:0 auto">
+  <h1>{{ role_label }} login</h1>
+  <form method="post" action="" class="form-grid">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div class="full"><label for="phone">Mobile number</label>
+      <input id="phone" name="phone" inputmode="numeric" required autofocus></div>
+    <div class="full"><label for="password">Password</label>
+      <input id="password" name="password" type="password" required></div>
+    <div class="full"><button class="btn" type="submit">Log in</button>
+      <span class="small muted"> New {{ role_label|lower }}? <a href="{{ url_for('register', role=role) if role != 'admin' else url_for('register') }}">Register</a>
+        · <a href="{{ url_for('login') }}">Switch login</a></span></div>
+  </form>
+</div>
+{% endblock %}

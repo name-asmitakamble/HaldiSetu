@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Buy / Sell{% endblock %}
+{% block content %}
+<div class="row-actions" style="justify-content:space-between">
+  <h1>Turmeric listings</h1>
+  {% if user and user.role == 'farmer' %}<a class="btn" href="{{ url_for('listing_new') }}">+ Create listing</a>{% endif %}
+</div>
+<div class="notice info small">Listings connect farmers and buyers through enquiries. HaldiSetu does not guarantee buyers,
+  prices, payment, delivery or a completed sale.</div>
+<form method="get" class="card form-grid">
+  <div><label for="form">Product form</label>
+    <select id="form" name="form"><option value="">All</option>
+      {% for p in forms %}<option {{ 'selected' if f.get('form') == p }}>{{ p }}</option>{% endfor %}</select></div>
+  <div><label for="location">Location contains</label><input id="location" name="location" value="{{ f.get('location','') }}"></div>
+  <div class="full"><button class="btn" type="submit">Search</button>
+    <a class="btn secondary" href="{{ url_for('listings') }}">Reset</a></div>
+</form>
+<div class="grid cols-2" style="margin-top:16px">
+  {% for l in rows %}
+  <a class="card module" href="{{ url_for('listing_detail', lid=l.listing_id) }}">
+    <span class="badge ok">Open</span>
+    <h3 style="margin-top:8px">{{ l.product_form }}</h3>
+    <p style="margin:.2rem 0"><strong>{{ '%g'|format(l.quantity) }} {{ l.quantity_unit }}</strong> · expected
+       <strong>{{ l.expected_price|inr }}</strong> {{ l.price_unit }}</p>
+    <p class="small muted" style="margin:.2rem 0">{{ l.location }} · by {{ l.farmer.name }}
+      {% if l.availability_date %}· available {{ l.availability_date|dmy }}{% endif %}</p>
+  </a>
+  {% else %}<p class="muted">No open listings match your search.</p>{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{# Quality card inputs — included by listing_form.html and lot_quality_form.html. Values are DECLARED by the farmer. #}
+<div class="full"><h3 class="section-title">Quality card <span class="small muted">(helps match industry buyers; values are declared by you)</span></h3></div>
+<div><label for="variety">Variety</label>
+  <input id="variety" name="variety" list="varieties" maxlength="60" value="{{ form.get('variety','') }}" placeholder="e.g. Finger, Bulb, Salem, Rajapuri">
+  <datalist id="varieties"><option>Finger</option><option>Bulb</option><option>Mixed</option></datalist></div>
+<div><label for="moisture_pct">Moisture % (optional)</label>
+  <input id="moisture_pct" name="moisture_pct" type="number" step="0.1" min="0" max="100" value="{{ form.get('moisture_pct','') }}"></div>
+<div><label for="curcumin_pct">Curcumin % (optional)</label>
+  <input id="curcumin_pct" name="curcumin_pct" type="number" step="0.01" min="0" max="100" value="{{ form.get('curcumin_pct','') }}">
+  <div class="hint">Only enter if tested. A lab report makes buyers trust it.</div></div>
+<div><label for="harvest_date">Harvest date (optional)</label>
+  <input id="harvest_date" name="harvest_date" type="date" value="{{ form.get('harvest_date','') }}"></div>
+<div><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" name="polished" style="width:auto" {{ 'checked' if form.get('polished') }}> Polished</label></div>
+<div><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" name="has_lab_report" style="width:auto" {{ 'checked' if form.get('has_lab_report') }}> I have a lab report</label></div>
+<div class="full"><label for="lab_report_ref">Lab report reference (lab name / report no.)</label>
+  <input id="lab_report_ref" name="lab_report_ref" maxlength="120" value="{{ form.get('lab_report_ref','') }}"></div>

@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}{% if active_lang == 'mr' %}शेतकरी डॅशबोर्ड{% elif active_lang == 'hi' %}किसान डैशबोर्ड{% else %}Farmer dashboard{% endif %}{% endblock %}
+{% block content %}
+
+<div class="row-actions" style="justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+  <div>
+    <h1 style="margin:0">
+      {% if active_lang == 'mr' %}नमस्कार, {{ user.name }}
+      {% elif active_lang == 'hi' %}नमस्ते, {{ user.name }}
+      {% else %}Namaste, {{ user.name }}{% endif %}
+    </h1>
+    <p class="muted" style="margin:.2rem 0 0">
+      {% if active_lang == 'mr' %}शेतकरी डॅशबोर्ड
+      {% elif active_lang == 'hi' %}किसान डैशबोर्ड
+      {% else %}Farmer dashboard{% endif %}
+    </p>
+  </div>
+
+  <div class="card" style="padding:8px 16px;display:flex;align-items:center;gap:10px;margin:0;background:#f9fcf9;border:2px solid var(--green)">
+    <span style="font-weight:700;font-size:.9rem;color:var(--green)">🌐 भाषा / Language:</span>
+    <a class="badge {{ 'ok' if (active_lang or 'en') == 'en' else 'grey' }}" style="cursor:pointer;font-size:.85rem;padding:4px 12px;text-decoration:none" href="{{ url_for('set_language', lang='en', next=request.path) }}">English</a>
+    <a class="badge {{ 'ok' if active_lang == 'mr' else 'grey' }}" style="cursor:pointer;font-size:.85rem;padding:4px 12px;text-decoration:none" href="{{ url_for('set_language', lang='mr', next=request.path) }}">मराठी</a>
+    <a class="badge {{ 'ok' if active_lang == 'hi' else 'grey' }}" style="cursor:pointer;font-size:.85rem;padding:4px 12px;text-decoration:none" href="{{ url_for('set_language', lang='hi', next=request.path) }}">हिंदी</a>
+  </div>
+</div>
+
+{% if proof != 'approved' %}
+<div class="notice warn">
+  {% if active_lang == 'mr' %}
+  तुमचे खाते <strong>{{ proof }}</strong> आहे. माल विक्रीसाठी <a href="{{ url_for('dash.verification') }}">सातबारा/८अ उतारा अपलोड करा</a>.
+  {% elif active_lang == 'hi' %}
+  आपका खाता <strong>{{ proof }}</strong> है। बिक्री शुरू करने के लिए <a href="{{ url_for('dash.verification') }}">भूमि दस्तावेज अपलोड करें</a>.
+  {% else %}
+  Your account is <strong>{{ proof }}</strong>. <a href="{{ url_for('dash.verification') }}">Upload your land record</a> to start selling.
+  {% endif %}
+</div>
+{% endif %}
+
+{% if notes %}
+<div class="notice info">
+  <strong>{% if active_lang == 'mr' %}भाव सूचना (अलर्ट){% elif active_lang == 'hi' %}मूल्य अलर्ट{% else %}Price alerts{% endif %}</strong>
+  <ul style="margin:.3rem 0">{% for n in notes %}<li>{{ n.text }}</li>{% endfor %}</ul>
+  <form method="post" action="{{ url_for('ag.notifications_read') }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <button class="btn secondary small" type="submit">
+      {% if active_lang == 'mr' %}वाचले म्हणून खूण करा{% elif active_lang == 'hi' %}पढ़ा हुआ चिह्नित करें{% else %}Mark as read{% endif %}
+    </button>
+  </form>
+</div>
+{% endif %}
+
+{% if msum %}
+<div class="card" style="margin-bottom:14px">
+  <strong>{% if active_lang == 'mr' %}आजचा बाजार सारांश{% elif active_lang == 'hi' %}आज का मंडी सारांश{% else %}Today's market summary{% endif %}</strong>
+  <p style="margin:.3rem 0 0">{{ msum.text }}</p>
+</div>
+{% endif %}
+
+<div class="grid cols-4">
+  <a class="card module" href="{{ url_for('sch.schemes') }}">
+    <div class="tag">
+      {% if active_lang == 'mr' %}विभाग १ · शासकीय योजना{% elif active_lang == 'hi' %}मॉड्यूल १ · सरकारी योजनाएं{% else %}Module 1 · Schemes{% endif %}
+    </div>
+    {% if out %}
+    <div class="stat">{{ out.results|selectattr('status','ne','no')|list|length }}</div>
+    <div class="small muted">
+      {% if active_lang == 'mr' %}योजना आपल्यासाठी योग्य आहेत{% elif active_lang == 'hi' %}योजनाएं आपके अनुकूल हो सकती हैं{% else %}schemes may suit you{% endif %}
+    </div>
+    {% else %}
+    <p class="muted">
+      {% if active_lang == 'mr' %}आपल्या शेतीची माहिती भरा आणि योजना शिफारस मिळवा.{% elif active_lang == 'hi' %}अपनी कृषि प्रोफ़ाइल भरें और योजना सुझाव पाएं।{% else %}Fill your farm profile to get your scheme plan.{% endif %}
+    </p>
+    {% endif %}
+  </a>
+
+  <a class="card module" href="{{ url_for('my_listings') }}">
+    <div class="tag">
+      {% if active_lang == 'mr' %}विभाग २ · बाजारपेठ{% elif active_lang == 'hi' %}मॉड्यूल २ · मार्केटप्लेस{% else %}Module 2 · Marketplace{% endif %}
+    </div>
+    <div class="stat">{{ lots|length }}</div>
+    <div class="small muted">
+      {% if active_lang == 'mr' %}नोंदवलेला माल · {{ strong }} खरेदीदार जुळणी
+      {% elif active_lang == 'hi' %}खुली फसल लॉट · {{ strong }} खरीदार मिलान
+      {% else %}open lots · {{ strong }} strong buyer match(es){% endif %}
+    </div>
+  </a>
+
+  <a class="card module" href="{{ url_for('market') }}">
+    <div class="tag">
+      {% if active_lang == 'mr' %}विभाग ३ · बाजार भाव{% elif active_lang == 'hi' %}मॉड्यूल ३ · मंडी भाव{% else %}Module 3 · Prices{% endif %}
+    </div>
+    {% if base %}
+    <div class="stat">{{ base.modal|inr }}</div>
+    <div class="small muted">
+      {% if active_lang == 'mr' %}बाजार समिती सरासरी/क्विंटल · {{ base.latest|dmy }}{% if base.is_sample %} · नमुना{% endif %}
+      {% elif active_lang == 'hi' %}मंडी औसत/क्विंटल · {{ base.latest|dmy }}{% if base.is_sample %} · नमूना{% endif %}
+      {% else %}mandi median/q · {{ base.latest|dmy }}{% if base.is_sample %} · SAMPLE{% endif %}{% endif %}
+    </div>
+    {% else %}
+    <p class="muted">
+      {% if active_lang == 'mr' %}बाजार माहिती उपलब्ध नाही.{% elif active_lang == 'hi' %}मंडी डेटा लोड नहीं हुआ है।{% else %}No mandi data loaded yet.{% endif %}
+    </p>
+    {% endif %}
+  </a>
+
+  <a class="card module" href="{{ url_for('deals.listing') }}">
+    <div class="tag">
+      {% if active_lang == 'mr' %}सुरू सौदे{% elif active_lang == 'hi' %}सक्रिय सौदे{% else %}Deals{% endif %}
+    </div>
+    <div class="stat">{{ deals|length }}</div>
+    <div class="small muted">
+      {% if active_lang == 'mr' %}सक्रिय व्यवहार
+      {% elif active_lang == 'hi' %}सक्रिय सौदे
+      {% else %}active deal(s){% endif %}
+    </div>
+  </a>
+</div>
+
+{% if best_offer %}
+<div class="notice good" style="margin-top:14px">
+  {% if active_lang == 'mr' %}
+  तुमच्या हळदीसाठी सध्याची सर्वोत्तम थेट ऑफर: <strong>{{ best_offer|inr }}/क्विंटल</strong> {% if base %}(बाजार समिती सरासरी {{ base.modal|inr }}){% endif %} — हळदीसेतूवर नोंदवलेले दर.
+  {% elif active_lang == 'hi' %}
+  आपकी हल्दी के लिए अभी का सर्वश्रेष्ठ सीधा प्रस्ताव: <strong>{{ best_offer|inr }}/क्विंटल</strong> {% if base %}(मंडी औसत {{ base.modal|inr }}){% endif %} — हल्दीसेतु पर दर्ज दरें।
+  {% else %}
+  Best direct offer for your lots right now: <strong>{{ best_offer|inr }}/quintal</strong> {% if base %}(mandi median {{ base.modal|inr }}){% endif %} — offered prices on HaldiSetu, not official market prices.
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="row-actions" style="margin:16px 0;flex-wrap:wrap;gap:8px">
+  <a class="btn" href="{{ url_for('listing_new') }}">
+    {% if active_lang == 'mr' %}+ नवीन माल नोंदवा (बोला किंवा लिहा){% elif active_lang == 'hi' %}+ नया लॉट जोड़ें (बोलें या लिखें){% else %}+ New lot (speak or type){% endif %}
+  </a>
+  <a class="btn" href="{{ url_for('ag.where_to_sell') }}" style="background:var(--green)">
+    {% if active_lang == 'mr' %}🎯 मी कुठे विक्री करावी?{% elif active_lang == 'hi' %}🎯 मैं कहाँ बेचूँ?{% else %}🎯 Where should I sell?{% endif %}
+  </a>
+  <a class="btn secondary" href="{{ url_for('mp.demands') }}">
+    {% if active_lang == 'mr' %}खरेदीदारांच्या मागण्या पहा{% elif active_lang == 'hi' %}खरीदार मांगें देखें{% else %}Browse buyer demands{% endif %}
+  </a>
+  <a class="btn secondary" href="{{ url_for('my_enquiries') }}">
+    {% if active_lang == 'mr' %}चौकशी संदेश{% elif active_lang == 'hi' %}पूछताछ{% else %}Enquiries{% endif %}
+  </a>
+  <a class="btn secondary" href="{{ url_for('mp.tool_fresh_dried') }}">
+    {% if active_lang == 'mr' %}ओली वि. वाळलेली हळद{% elif active_lang == 'hi' %}ताजी बनाम सूखी हल्दी{% else %}Fresh vs dried{% endif %}
+  </a>
+  <a class="btn secondary" href="{{ url_for('detect') }}">
+    {% if active_lang == 'mr' %}पानांची तपासणी{% elif active_lang == 'hi' %}पत्ती जांच{% else %}Leaf check{% endif %}
+  </a>
+</div>
+
+{% if out and out.calendar %}
+<h2>{% if active_lang == 'mr' %}तुमची कृती दिनदर्शिका{% elif active_lang == 'hi' %}आपका कार्य कैलेंडर{% else %}Your action calendar{% endif %}</h2>
+<div class="grid cols-2">
+  {% for c in out.calendar %}
+  <div class="card" style="{{ 'border-color:var(--gold);background:var(--gold-soft)' if c.current }}">
+    <h3>{{ c.label }}</h3>
+    <ul style="margin:.3rem 0 0;padding-left:1.1rem">
+      {% for i in c['items'] %}
+      <li>{{ i.name }} <span class="small muted">— {% if active_lang == 'mr' %}कागदपत्रे{% elif active_lang == 'hi' %}दस्तावेज़{% else %}documents{% endif %} {{ i.have }}/{{ i.need }}</span></li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if deals %}
+<h2 style="margin-top:20px">{% if active_lang == 'mr' %}सुरू सौदे व बिले{% elif active_lang == 'hi' %}सक्रिय सौदे एवं बिल{% else %}Active deals{% endif %}</h2>
+<div class="table-wrap">
+  <table>
+    <tr>
+      <th>{% if active_lang == 'mr' %}बिल क्र.{% elif active_lang == 'hi' %}बिल सं.{% else %}Bill{% endif %}</th>
+      <th>{% if active_lang == 'mr' %}खरेदीदार{% elif active_lang == 'hi' %}खरीदार{% else %}Buyer{% endif %}</th>
+      <th class="num">{% if active_lang == 'mr' %}एकूण रक्कम{% elif active_lang == 'hi' %}कुल राशि{% else %}Total{% endif %}</th>
+      <th>{% if active_lang == 'mr' %}स्थिती{% elif active_lang == 'hi' %}स्थिति{% else %}Status{% endif %}</th>
+    </tr>
+    {% for d in deals %}
+    <tr>
+      <td><a href="{{ url_for('deals.detail', did=d.deal_id) }}">{{ d.bill_no }}</a></td>
+      <td>{{ d.buyer.name }}</td>
+      <td class="num">{{ d.total|inr }}</td>
+      <td>{{ d.status }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+{% endblock %}

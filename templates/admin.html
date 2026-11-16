@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Admin{% endblock %}
+{% block content %}
+<h1>Administration</h1>
+<div class="grid cols-4">
+  <div class="card"><div class="stat">{{ n_users }}</div>users</div>
+  <div class="card"><div class="stat">{{ n_prices }}</div>price records<div class="small muted">newest: {{ latest|dmy }}</div></div>
+  <div class="card"><div class="stat">{{ total }}</div>predictions logged</div>
+  <div class="card"><div class="stat">{{ uncertain }}</div>flagged uncertain</div>
+</div>
+
+<div class="card" style="margin-top:18px"><h2>Import market prices (CSV)</h2>
+  <p class="muted small">Agmarknet / data.gov.in style columns: State, District, Market, Commodity, Variety, Arrival_Date,
+    Min_Price, Max_Price, Modal_Price. Non-turmeric rows and duplicates are skipped automatically.</p>
+  <form method="post" action="{{ url_for('admin_import_prices') }}" enctype="multipart/form-data" class="form-grid">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div><label for="csv_file">CSV file</label><input id="csv_file" type="file" name="csv_file" accept=".csv" required></div>
+    <div><label for="source_name">Source description (shown to users)</label>
+      <input id="source_name" name="source_name" required minlength="5" maxlength="200"
+        placeholder="Agmarknet via data.gov.in, downloaded 30 Oct 2026"></div>
+    <div class="full"><button class="btn" type="submit">Import</button></div>
+  </form></div>
+
+<div class="card" style="margin-top:18px"><h2>Prediction log summary</h2>
+  <div class="table-wrap"><table><tr><th>Predicted class</th><th class="num">Count</th></tr>
+    {% for c, n in by_class %}<tr><td>{{ c }}</td><td class="num">{{ n }}</td></tr>
+    {% else %}<tr><td colspan="2" class="muted">No predictions yet.</td></tr>{% endfor %}</table></div></div>
+
+<div class="card" style="margin-top:18px"><h2>Content verification status</h2>
+  <div class="table-wrap"><table><tr><th>Type</th><th>Record</th><th>Last verified</th></tr>
+    {% for a in advisories %}<tr><td>Advisory</td><td>{{ a.display_name }}</td>
+      <td>{{ a.last_verified_date|dmy if a.last_verified_date else 'NOT VERIFIED' }}</td></tr>{% endfor %}
+    {% for s in schemes %}<tr><td>Scheme</td><td>{{ s.scheme_name }}</td>
+      <td>{{ s.last_verified_date|dmy if s.last_verified_date else 'NOT VERIFIED' }}</td></tr>{% endfor %}
+  </table></div>
+  <p class="hint">Edit the dates in <code>seed.py</code> after checking each official source, then run <code>python seed.py</code>.</p></div>
+{% endblock %}

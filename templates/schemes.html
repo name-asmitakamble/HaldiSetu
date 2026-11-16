@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}{{ L.title }}{% endblock %}
+{% block content %}
+<div class="row-actions" style="justify-content:space-between">
+  <h1>{{ L.title }}</h1>
+  <form method="get" class="row-actions" aria-label="Language">
+    {% for code, name in LANGS.items() %}
+      <button class="btn {{ '' if code == lang else 'secondary' }} small" name="lang" value="{{ code }}" type="submit">{{ name }}</button>
+    {% endfor %}
+  </form>
+</div>
+
+{% if user and user.role == 'farmer' %}
+<p class="muted">{{ L.intro }}</p>
+<form method="post" action="{{ url_for('sch.save_profile') }}" class="card form-grid">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <input type="hidden" name="language" value="{{ lang }}">
+  <div><label for="state">{{ L.state }}</label>
+    <select id="state" name="state"><option value="">{{ L.select }}</option>
+      {% for s in STATES %}<option {{ 'selected' if fp and fp.state == s }}>{{ s }}</option>{% endfor %}</select></div>
+  <div><label for="district">{{ L.district }}</label><input id="district" name="district" maxlength="60" value="{{ fp.district if fp and fp.district else '' }}"></div>
+  <div><label for="land_ha">{{ L.land }}</label>
+    <input id="land_ha" name="land_ha" type="number" step="0.01" min="0" value="{{ fp.land_ha if fp and fp.land_ha is not none else '' }}"></div>
+  <div><label for="owns_land">{{ L.owns }}</label>
+    <select id="owns_land" name="owns_land"><option value="">{{ L.select }}</option>
+      <option value="yes" {{ 'selected' if fp and fp.owns_land == 'yes' }}>{{ L.yes }}</option>
+      <option value="no" {{ 'selected' if fp and fp.owns_land == 'no' }}>{{ L.no }}</option></select></div>
+  <div><label for="farmer_type">{{ L.ftype }}</label>
+    <select id="farmer_type" name="farmer_type"><option value="">{{ L.select }}</option>
+      {% for t in FARMER_TYPES %}<option value="{{ t }}" {{ 'selected' if fp and fp.farmer_type == t }}>{{ L[t] }}</option>{% endfor %}</select></div>
+  <div><label for="stage">{{ L.stage }}</label>
+    <select id="stage" name="stage"><option value="">{{ L.select }}</option>
+      {% for k in STAGE_ORDER %}<option value="{{ k }}" {{ 'selected' if fp and fp.stage == k }}>{{ STAGES[k][lang] }}</option>{% endfor %}</select></div>
+  <fieldset class="full" style="border:1px solid var(--line);border-radius:10px;padding:10px 14px">
+    <legend style="font-weight:600;font-size:.92rem">{{ L.docs_have }}</legend>
+    <div class="grid cols-2" style="gap:6px">
+      {% for k, names in DOCS.items() %}
+      <label style="font-weight:400;display:flex;gap:8px;align-items:center">
+        <input type="checkbox" name="docs" value="{{ k }}" style="width:auto" {{ 'checked' if k in have }}> {{ names[lang] }}</label>
+      {% endfor %}</div>
+  </fieldset>
+  <div class="full"><button class="btn" type="submit">{{ L.save }}</button></div>
+</form>
+
+{% if out %}
+  <div class="notice info" style="margin-top:18px"><strong>{{ out.summary }}</strong><br><span class="small">{{ L.disclaimer }}</span></div>
+
+  {% if out.calendar %}
+  <h2 style="margin-top:22px">{{ L.calendar }}</h2>
+  <div class="grid cols-2">
+    {% for c in out.calendar %}
+    <div class="card" style="{{ 'border-color:var(--gold);background:var(--gold-soft)' if c.current }}">
+      <h3>{{ c.label }} {% if c.current %}<span class="badge warn">{{ L.now }}</span>{% endif %}</h3>
+      <ul style="margin:.3rem 0 0;padding-left:1.1rem">
+        {% for i in c['items'] %}<li>{{ i.name }} <span class="small muted">— {{ L.docs_count.format(have=i.have, need=i.need) }}</span></li>{% endfor %}
+      </ul></div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <h2 style="margin-top:22px">{{ L.results }}</h2>
+  {% for r in out.results %}
+  <div class="card" style="margin-top:14px">
+    <div class="row-actions" style="justify-content:space-between">
+      <h3 style="margin:0">{{ r.name }}</h3>
+      <span>
+        {% if r.status == 'match' %}<span class="badge ok">{{ L.match }}</span>
+        {% elif r.status == 'unknown' %}<span class="badge warn">{{ L.unknown }}</span>
+        {% else %}<span class="badge grey">{{ L.no_match }}</span>{% endif %}
+        {% if r.status != 'no' %}{% if r.relevant_now %}<span class="badge ok">{{ L.now }}</span>
+        {% elif r.stage_names %}<span class="badge grey">{{ L.later }} {{ r.stage_names|join(', ') }}</span>{% endif %}{% endif %}
+      </span>
+    </div>
+    {% if r.status != 'no' %}
+      <h3 class="section-title">{{ L.highlights }}</h3><p>{{ r.highlights }}</p>
+      {% if r.need_docs %}<p><strong>{{ L.docs_count.format(have=r.have_docs|length, need=r.need_docs|length) }}</strong>
+        {% if r.missing_docs %}<br>{{ L.missing }} {% for d in r.missing_docs %}{{ DOCS[d][lang] }}{{ ', ' if not loop.last }}{% endfor %}
+        {% else %}<br>{{ L.all_docs }}{% endif %}</p>{% endif %}
+      {% if r.steps %}<h3>{{ L.steps }}</h3><ol>{% for s in r.steps %}<li>{{ s }}</li>{% endfor %}</ol>{% endif %}
+      <p><a class="btn" href="{{ r.apply_url}}" target="_blank" rel="noopener noreferrer">{{ L.apply }} ↗</a></p>
+      {% if r.apply_hint %}<p class="small muted">{{ r.apply_hint }}</p>{% endif %}
+    {% endif %}
+    {% if r.checks %}<ul class="checks"><li class="u" style="font-weight:600;list-style:none">{{ L.why }}:</li>
+      {% for c in r.checks %}<li class="{{ 't' if c.result is true else ('f' if c.result is false else 'u') }}">{{ c.text }}</li>{% endfor %}</ul>{% endif %}
+    {% if r.note and r.status != 'no' %}<div class="notice warn small">{{ r.note }}</div>{% endif %}
+    <p class="small muted"><a href="{{ r.scheme.official_url }}" target="_blank" rel="noopener noreferrer">{{ r.scheme.official_url }}</a> · {{ L.verified }}:
+      {% if r.scheme.last_verified_date %}{{ r.scheme.last_verified_date|dmy }}{% else %}<em>{{ L.not_verified }}</em>{% endif %}</p>
+  </div>
+  {% endfor %}
+{% else %}<p class="muted" style="margin-top:16px">{{ L.no_profile }}</p>{% endif %}
+
+{% else %}
+  <div class="notice info">{{ L.login }} <a href="{{ url_for('login', next=request.path) }}">Login</a> ·
+    <a href="{{ url_for('register') }}">Register</a></div>
+  {% for p in public %}
+  <div class="card" style="margin-top:12px"><h3>{{ p.name }}</h3><p class="muted">{{ p.text }}</p>
+    <a href="{{ p.url }}" target="_blank" rel="noopener" class="small">{{ p.url }}</a></div>
+  {% endfor %}
+{% endif %}
+{% endblock %}
